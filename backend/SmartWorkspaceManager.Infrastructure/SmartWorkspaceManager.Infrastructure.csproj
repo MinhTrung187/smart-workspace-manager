@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SmartWorkspaceManager.Application\SmartWorkspaceManager.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Authentication\" />
+    <Folder Include="Notifications\" />
+    <Folder Include="SignalR\" />
+    <Folder Include="Services\" />
+  </ItemGroup>
+
+</Project>

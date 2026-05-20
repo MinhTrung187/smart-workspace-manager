@@ -1,0 +1,58 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36705.20 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "backend", "backend", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartWorkspaceManager.API", "backend\SmartWorkspaceManager.API\SmartWorkspaceManager.API.csproj", "{A66CE8D6-363F-486B-9D40-92BEB4D90BE1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartWorkspaceManager.Application", "backend\SmartWorkspaceManager.Application\SmartWorkspaceManager.Application.csproj", "{D2D59A9C-A25F-43C7-A8A0-465EB2F65618}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartWorkspaceManager.Domain", "backend\SmartWorkspaceManager.Domain\SmartWorkspaceManager.Domain.csproj", "{7D2611A1-0BC1-44B0-B110-D857768A32FE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartWorkspaceManager.Infrastructure", "backend\SmartWorkspaceManager.Infrastructure\SmartWorkspaceManager.Infrastructure.csproj", "{83F449F0-5004-448F-8038-65235B487F20}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartWorkspaceManager.Persistence", "backend\SmartWorkspaceManager.Persistence\SmartWorkspaceManager.Persistence.csproj", "{0DED400F-FE18-48F1-96B4-379F7624F6F4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A66CE8D6-363F-486B-9D40-92BEB4D90BE1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A66CE8D6-363F-486B-9D40-92BEB4D90BE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A66CE8D6-363F-486B-9D40-92BEB4D90BE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A66CE8D6-363F-486B-9D40-92BEB4D90BE1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D2D59A9C-A25F-43C7-A8A0-465EB2F65618}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2D59A9C-A25F-43C7-A8A0-465EB2F65618}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2D59A9C-A25F-43C7-A8A0-465EB2F65618}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2D59A9C-A25F-43C7-A8A0-465EB2F65618}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7D2611A1-0BC1-44B0-B110-D857768A32FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D2611A1-0BC1-44B0-B110-D857768A32FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D2611A1-0BC1-44B0-B110-D857768A32FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D2611A1-0BC1-44B0-B110-D857768A32FE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83F449F0-5004-448F-8038-65235B487F20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83F449F0-5004-448F-8038-65235B487F20}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83F449F0-5004-448F-8038-65235B487F20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83F449F0-5004-448F-8038-65235B487F20}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0DED400F-FE18-48F1-96B4-379F7624F6F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0DED400F-FE18-48F1-96B4-379F7624F6F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0DED400F-FE18-48F1-96B4-379F7624F6F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0DED400F-FE18-48F1-96B4-379F7624F6F4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A66CE8D6-363F-486B-9D40-92BEB4D90BE1} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{D2D59A9C-A25F-43C7-A8A0-465EB2F65618} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{7D2611A1-0BC1-44B0-B110-D857768A32FE} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{83F449F0-5004-448F-8038-65235B487F20} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{0DED400F-FE18-48F1-96B4-379F7624F6F4} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {15FCA116-88A9-41E0-88AF-09306F3FD6E0}
+	EndGlobalSection
+EndGlobal
