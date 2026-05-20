@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -8,6 +8,12 @@
 
   <ItemGroup>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SmartWorkspaceManager.Application\SmartWorkspaceManager.Application.csproj" />
+    <ProjectReference Include="..\SmartWorkspaceManager.Infrastructure\SmartWorkspaceManager.Infrastructure.csproj" />
+    <ProjectReference Include="..\SmartWorkspaceManager.Persistence\SmartWorkspaceManager.Persistence.csproj" />
   </ItemGroup>
 
 </Project>
