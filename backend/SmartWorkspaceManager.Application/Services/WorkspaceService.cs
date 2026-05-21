@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using SmartWorkspaceManager.Application.DTOs;
 using SmartWorkspaceManager.Application.Interfaces;
@@ -80,6 +81,78 @@ namespace SmartWorkspaceManager.Application.Services
                 workspace.OwnerId,
                 workspace.CreatedAt,
                 workspace.UpdatedAt
+            );
+        }
+
+        public async Task<UserWorkspacesResponse> GetWorkspacesOfUserAsync()
+        {
+            var userId = _userContext.UserId;
+            if (userId == null || userId == Guid.Empty)
+            {
+                throw new UnauthorizedAccessException("User is not authenticated. Please provide a valid JWT token.");
+            }
+
+            var workspaces = await _workspaceRepository.FindAsync(
+                w => w.OwnerId == userId.Value || w.Members.Any(m => m.UserId == userId.Value),
+                w => w.Members
+            );
+
+            var workspacesList = workspaces.ToList();
+
+            return new UserWorkspacesResponse(
+                TotalWorkspacesCount: workspacesList.Count,
+                Workspaces: workspacesList.Select(w => new UserWorkspaceItemResponse(
+                    w.Id,
+                    w.Name,
+                    w.Description,
+                    w.OwnerId,
+                    w.CreatedAt,
+                    w.UpdatedAt,
+                    MemberCount: w.Members.Count
+                )).ToList()
+            );
+        }
+
+        public async Task<WorkspaceDetailResponse> GetWorkspaceByIdAsync(Guid id)
+        {
+            var userId = _userContext.UserId;
+            if (userId == null || userId == Guid.Empty)
+            {
+                throw new UnauthorizedAccessException("User is not authenticated. Please provide a valid JWT token.");
+            }
+
+            var workspaces = await _workspaceRepository.FindAsync(
+                w => w.Id == id,
+                "Members.User"
+            );
+
+            var workspace = workspaces.FirstOrDefault();
+            if (workspace == null)
+            {
+                throw new KeyNotFoundException("Workspace not found.");
+            }
+
+            var isMember = workspace.Members.Any(m => m.UserId == userId.Value);
+            if (!isMember)
+            {
+                throw new UnauthorizedAccessException("You do not have permission to view this workspace.");
+            }
+
+            return new WorkspaceDetailResponse(
+                workspace.Id,
+                workspace.Name,
+                workspace.Description,
+                workspace.OwnerId,
+                workspace.CreatedAt,
+                workspace.UpdatedAt,
+                Members: workspace.Members.Select(m => new WorkspaceMemberDto(
+                    m.UserId,
+                    m.User?.FullName ?? string.Empty,
+                    m.User?.Email ?? string.Empty,
+                    m.User?.AvatarUrl,
+                    m.Role.ToString(),
+                    m.JoinedAt
+                )).ToList()
             );
         }
     }

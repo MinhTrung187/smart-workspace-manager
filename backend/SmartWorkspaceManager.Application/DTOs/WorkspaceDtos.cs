@@ -21,4 +21,38 @@ namespace SmartWorkspaceManager.Application.DTOs
         DateTime CreatedAt,
         DateTime? UpdatedAt
     );
+
+    public sealed record UserWorkspacesResponse(
+        int TotalWorkspacesCount,
+        List<UserWorkspaceItemResponse> Workspaces
+    );
+
+    public sealed record UserWorkspaceItemResponse(
+        Guid Id,
+        string Name,
+        string? Description,
+        Guid OwnerId,
+        DateTime CreatedAt,
+        DateTime? UpdatedAt,
+        int MemberCount
+    );
+
+    public sealed record WorkspaceDetailResponse(
+        Guid Id,
+        string Name,
+        string? Description,
+        Guid OwnerId,
+        DateTime CreatedAt,
+        DateTime? UpdatedAt,
+        List<WorkspaceMemberDto> Members
+    );
+
+    public sealed record WorkspaceMemberDto(
+        Guid UserId,
+        string FullName,
+        string Email,
+        string? AvatarUrl,
+        string Role,
+        DateTime JoinedAt
+    );
 }

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SmartWorkspaceManager.Application.Interfaces;
@@ -46,6 +48,34 @@ namespace SmartWorkspaceManager.Persistence.Repositories
         public virtual async Task<int> SaveChangesAsync()
         {
             return await _context.SaveChangesAsync();
+        }
+
+        public virtual async Task<IEnumerable<T>> FindAsync(
+            Expression<Func<T, bool>> predicate,
+            params Expression<Func<T, object>>[] includes)
+        {
+            IQueryable<T> query = _dbSet;
+
+            if (includes != null)
+            {
+                query = includes.Aggregate(query, (current, include) => current.Include(include));
+            }
+
+            return await query.Where(predicate).ToListAsync();
+        }
+
+        public virtual async Task<IEnumerable<T>> FindAsync(
+            Expression<Func<T, bool>> predicate,
+            params string[] includes)
+        {
+            IQueryable<T> query = _dbSet;
+
+            if (includes != null)
+            {
+                query = includes.Aggregate(query, (current, include) => current.Include(include));
+            }
+
+            return await query.Where(predicate).ToListAsync();
         }
     }
 }
