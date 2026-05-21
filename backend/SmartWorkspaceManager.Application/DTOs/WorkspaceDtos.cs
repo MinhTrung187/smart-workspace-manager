@@ -55,4 +55,20 @@ namespace SmartWorkspaceManager.Application.DTOs
         string Role,
         DateTime JoinedAt
     );
+
+    public sealed class InviteUserRequest
+    {
+        [Required(ErrorMessage = "Email is required.")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public sealed record WorkspaceInvitationResponse(
+        Guid Id,
+        Guid WorkspaceId,
+        string Email,
+        string Status,
+        DateTime ExpiredAt,
+        string InviteLink
+    );
 }

@@ -86,5 +86,35 @@ namespace SmartWorkspaceManager.API.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while retrieving the workspace details.", details = ex.Message });
             }
         }
+
+        [HttpPost("{workspaceId:guid}/invite")]
+        public async Task<ActionResult<WorkspaceInvitationResponse>> CreateInvitation([FromRoute] Guid workspaceId, [FromBody] InviteUserRequest request)
+        {
+            try
+            {
+                var response = await _workspaceService.CreateInvitationAsync(workspaceId, request);
+                return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while creating the invitation.", details = ex.Message });
+            }
+        }
     }
 }

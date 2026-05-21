@@ -30,6 +30,9 @@ namespace SmartWorkspaceManager.Persistence.Configurations
                    .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasIndex(wm => wm.WorkspaceId);
+            builder.HasQueryFilter(x => !x.User.IsDeleted);
+
+
         }
     }
 }
