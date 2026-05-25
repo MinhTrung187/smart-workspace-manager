@@ -42,5 +42,30 @@ namespace SmartWorkspaceManager.API.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while retrieving invitations.", details = ex.Message });
             }
         }
+        [HttpPost("{id:guid}/accept")]
+        public async Task<ActionResult<WorkspaceMemberDto>> Accept(Guid id)
+        {
+            try
+            {
+                var member = await _invitationService.AcceptInvitationAsync(id);
+                return Ok(member);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while accepting the invitation.", details = ex.Message });
+            }
+        }
     }
 }
