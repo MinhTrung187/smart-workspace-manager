@@ -82,6 +82,7 @@ builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
 builder.Services.AddScoped<IWorkspaceInvitationService, WorkspaceInvitationService>();
 builder.Services.AddScoped<IBoardService, BoardService>();
 builder.Services.AddScoped<IColumnService, ColumnService>();
+builder.Services.AddScoped<IBoardTaskService, BoardTaskService>();
 
 var app = builder.Build();
 
