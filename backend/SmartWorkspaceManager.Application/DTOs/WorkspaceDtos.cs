@@ -63,12 +63,5 @@ namespace SmartWorkspaceManager.Application.DTOs
         public string Email { get; set; } = string.Empty;
     }
 
-    public sealed record WorkspaceInvitationResponse(
-        Guid Id,
-        Guid WorkspaceId,
-        string Email,
-        string Status,
-        DateTime ExpiredAt,
-        string InviteLink
-    );
+
 }
