@@ -15,17 +15,20 @@ namespace SmartWorkspaceManager.Application.Services
         private readonly IGenericRepository<WorkspaceMember> _workspaceMemberRepository;
         private readonly IUserRepository _userRepository;
         private readonly IUserContext _userContext;
+        private readonly IGenericRepository<Workspace> _workspaceRepository;
 
         public WorkspaceInvitationService(
             IGenericRepository<WorkspaceInvitation> invitationRepository,
             IUserRepository userRepository,
             IGenericRepository<WorkspaceMember> workspaceMemberRepository,
+            IGenericRepository<Workspace> workspaceRepository,
             IUserContext userContext)
         {
             _invitationRepository = invitationRepository ?? throw new ArgumentNullException(nameof(invitationRepository));
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
             _workspaceMemberRepository = workspaceMemberRepository ?? throw new ArgumentNullException(nameof(workspaceMemberRepository));
+            _workspaceRepository = workspaceRepository ?? throw new ArgumentNullException(nameof(workspaceRepository));
         }
 
         public async Task<List<AllInvitationResponse>> GetInvitationsForCurrentUserAsync()
@@ -123,6 +126,83 @@ namespace SmartWorkspaceManager.Application.Services
                     member.Role.ToString(),
                     member.JoinedAt
                 );
+        }
+        public async Task<WorkspaceInvitationResponse> CreateInvitationAsync(Guid workspaceId, InviteUserRequest request)
+        {
+            var userId = _userContext.UserId;
+            if (userId == null || userId == Guid.Empty)
+            {
+                throw new UnauthorizedAccessException("User is not authenticated. Please provide a valid JWT token.");
+            }
+
+            // 1. Validate workspace existence and owner permission
+            var workspace = await _workspaceRepository.GetByIdAsync(workspaceId);
+            if (workspace == null)
+            {
+                throw new KeyNotFoundException("Workspace not found.");
+            }
+
+            if (workspace.OwnerId != userId.Value)
+            {
+                throw new UnauthorizedAccessException("Only the workspace owner can invite other users.");
+            }
+
+            var inviteEmail = request.Email.Trim().ToLower();
+
+            // 2. Check if the user is already a member of the workspace
+            var invitedUser = await _userRepository.GetByEmailAsync(inviteEmail);
+            if (invitedUser != null)
+            {
+                var existingMembership = await _workspaceMemberRepository.FindAsync(
+                    m => m.WorkspaceId == workspaceId && m.UserId == invitedUser.Id,
+                    Array.Empty<string>()
+                );
+
+                if (existingMembership.Any())
+                {
+                    throw new InvalidOperationException("User is already a member of this workspace.");
+                }
+            }
+
+            // 3. Check for an active pending invitation
+            var existingInvitations = await _invitationRepository.FindAsync(
+                i => i.WorkspaceId == workspaceId && i.Email.ToLower() == inviteEmail && i.Status == InvitationStatus.Pending,
+                Array.Empty<string>()
+            );
+
+            var activeInvitation = existingInvitations.FirstOrDefault(i => i.ExpiredAt > DateTime.UtcNow);
+            if (activeInvitation != null)
+            {
+                return new WorkspaceInvitationResponse(
+                    activeInvitation.Id,
+                    activeInvitation.WorkspaceId,
+                    activeInvitation.Email,
+                    activeInvitation.Status.ToString(),
+                    activeInvitation.ExpiredAt,
+                    $"/invite/{activeInvitation.Id}"
+                );
+            }
+
+            // 4. Create the new invitation
+            var invitation = new WorkspaceInvitation
+            {
+                WorkspaceId = workspaceId,
+                Email = request.Email.Trim(),
+                Status = InvitationStatus.Pending,
+                ExpiredAt = DateTime.UtcNow.AddDays(7) // Invitation expires in 7 days
+            };
+
+            await _invitationRepository.AddAsync(invitation);
+            await _invitationRepository.SaveChangesAsync();
+
+            return new WorkspaceInvitationResponse(
+                invitation.Id,
+                invitation.WorkspaceId,
+                invitation.Email,
+                invitation.Status.ToString(),
+                invitation.ExpiredAt,
+                $"/invite/{invitation.Id}"
+            );
         }
     }
 
