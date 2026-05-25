@@ -12,6 +12,10 @@ namespace SmartWorkspaceManager.Persistence.Context
         public DbSet<Workspace> Workspaces => Set<Workspace>();
         public DbSet<WorkspaceMember> WorkspaceMembers => Set<WorkspaceMember>();
         public DbSet<WorkspaceInvitation> WorkspaceInvitations => Set<WorkspaceInvitation>();
+        public DbSet<Board> Boards => Set<Board>();
+        public DbSet<Column> Columns => Set<Column>();
+        public DbSet<BoardTask> BoardTasks => Set<BoardTask>();
+        public DbSet<TaskAssignee> TaskAssignees => Set<TaskAssignee>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
