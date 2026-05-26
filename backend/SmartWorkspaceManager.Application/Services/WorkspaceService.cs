@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using SmartWorkspaceManager.Application.Common;
 using SmartWorkspaceManager.Application.DTOs;
 using SmartWorkspaceManager.Application.Interfaces;
 using SmartWorkspaceManager.Domain.Entities;
@@ -16,6 +17,7 @@ namespace SmartWorkspaceManager.Application.Services
         private readonly IGenericRepository<WorkspaceInvitation> _workspaceInvitationRepository;
         private readonly IGenericRepository<Board> _boardRepository;
         private readonly IGenericRepository<Column> _columnRepository;
+        private readonly IGenericRepository<BoardTask> _taskRepository;
         private readonly IUserRepository _userRepository;
         private readonly IUserContext _userContext;
 
@@ -25,6 +27,7 @@ namespace SmartWorkspaceManager.Application.Services
             IGenericRepository<WorkspaceInvitation> workspaceInvitationRepository,
             IGenericRepository<Board> boardRepository,
             IGenericRepository<Column> columnRepository,
+            IGenericRepository<BoardTask> taskRepository,
             IUserRepository userRepository,
             IUserContext userContext)
         {
@@ -34,6 +37,7 @@ namespace SmartWorkspaceManager.Application.Services
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _boardRepository = boardRepository ?? throw new ArgumentNullException(nameof(boardRepository));
             _columnRepository = columnRepository ?? throw new ArgumentNullException(nameof(columnRepository));
+            _taskRepository = taskRepository ?? throw new ArgumentNullException(nameof(taskRepository));
             _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
         }
 
@@ -201,46 +205,63 @@ namespace SmartWorkspaceManager.Application.Services
             );
         }
 
-        public async Task<WorkspaceDetailResponse> GetWorkspaceByIdAsync(Guid id)
+        public async Task<WorkspaceDetailResponse> GetWorkspaceByIdAsync(Guid id, WorkspaceQueryOptions? options = null)
         {
+            options ??= new WorkspaceQueryOptions();
+
             var userId = _userContext.UserId;
             if (userId == null || userId == Guid.Empty)
-            {
                 throw new UnauthorizedAccessException("User is not authenticated. Please provide a valid JWT token.");
-            }
 
-            var workspaces = await _workspaceRepository.FindAsync(
-                w => w.Id == id,
-                "Members.User"
-            );
-
+            var workspaces = await _workspaceRepository.FindAsync(w => w.Id == id, "Members", "Owner");
             var workspace = workspaces.FirstOrDefault();
             if (workspace == null)
-            {
                 throw new KeyNotFoundException("Workspace not found.");
-            }
 
-            var isMember = workspace.Members.Any(m => m.UserId == userId.Value);
+            var isMember = workspace.Members.Any(m => m.UserId == userId.Value) || workspace.OwnerId == userId.Value;
             if (!isMember)
-            {
                 throw new UnauthorizedAccessException("You do not have permission to view this workspace.");
+
+            var ownerName = workspace.Owner?.FullName ?? (await _userRepository.GetByIdAsync(workspace.OwnerId))?.FullName ?? string.Empty;
+
+            var boardsAll = (await _boardRepository.FindAsync(b => b.WorkspaceId == workspace.Id, "Creator")).ToList();
+
+            var boardsPaged = boardsAll
+                .OrderBy(b => b.CreatedAt)
+                .Skip((Math.Max(1, options.BoardsPage) - 1) * options.BoardsPageSize)
+                .Take(options.BoardsPageSize)
+                .ToList();
+
+            var boardDtos = new List<BoardDto>();
+
+            foreach (var board in boardsPaged)
+            {
+                var boardCreatorName = board.Creator?.FullName ?? (await _userRepository.GetByIdAsync(board.CreatedBy))?.FullName ?? string.Empty;
+
+                var columns = (await _columnRepository.FindAsync(c => c.BoardId == board.Id, Array.Empty<string>()))
+                    .OrderBy(c => c.Position)
+                    .Select(c => new ColumnBasicDto(c.Id, c.BoardId, c.Name, c.Position))
+                    .ToList();
+
+                boardDtos.Add(new BoardDto(
+                    board.Id,
+                    board.WorkspaceId,
+                    board.Name,
+                    boardCreatorName,
+                    board.CreatedAt,
+                    board.UpdatedAt,
+                    columns
+                ));
             }
 
             return new WorkspaceDetailResponse(
                 workspace.Id,
                 workspace.Name,
                 workspace.Description,
-                workspace.OwnerId,
+                ownerName,
                 workspace.CreatedAt,
                 workspace.UpdatedAt,
-                Members: workspace.Members.Select(m => new WorkspaceMemberDto(
-                    m.UserId,
-                    m.User?.FullName ?? string.Empty,
-                    m.User?.Email ?? string.Empty,
-                    m.User?.AvatarUrl,
-                    m.Role.ToString(),
-                    m.JoinedAt
-                )).ToList()
+                boardDtos
             );
         }
 

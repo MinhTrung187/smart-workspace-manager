@@ -91,11 +91,11 @@ namespace SmartWorkspaceManager.API.Controllers
         }
 
         [HttpGet("{id:guid}")]
-        public async Task<ActionResult<WorkspaceDetailResponse>> GetById(Guid id)
+        public async Task<ActionResult<WorkspaceDetailResponse>> GetById(Guid id, [FromQuery] WorkspaceQueryOptions? options)
         {
             try
             {
-                var workspace = await _workspaceService.GetWorkspaceByIdAsync(id);
+                var workspace = await _workspaceService.GetWorkspaceByIdAsync(id, options);
                 return Ok(workspace);
             }
             catch (UnauthorizedAccessException ex)

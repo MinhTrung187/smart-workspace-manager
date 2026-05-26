@@ -1,4 +1,6 @@
+using SmartWorkspaceManager.Application.Common;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace SmartWorkspaceManager.Application.DTOs
@@ -37,14 +39,58 @@ namespace SmartWorkspaceManager.Application.DTOs
         int MemberCount
     );
 
+    public sealed class WorkspaceQueryOptions
+    {
+        public int BoardsPage { get; set; } = 1;
+        public int BoardsPageSize { get; set; } = 50;
+
+        public int TasksPage { get; set; } = 1;
+        public int TasksPageSize { get; set; } = 50;
+
+        public string? TaskSearch { get; set; }
+
+        public string? TaskSortBy { get; set; }
+        public bool TaskSortDesc { get; set; } = false;
+    }
+
+    public sealed record BoardTaskDto(
+        Guid Id,
+        Guid ColumnId,
+        string Title,
+        string? Description,
+        DateTime? DueDate,
+        string Priority,
+        int Position,
+        string CreatedByName,
+        DateTime CreatedAt,
+        DateTime? UpdatedAt
+    );
+
+    public sealed record ColumnBasicDto(
+        Guid Id,
+        Guid BoardId,
+        string Name,
+        int Position
+    );
+
+    public sealed record BoardDto(
+        Guid Id,
+        Guid WorkspaceId,
+        string Name,
+        string CreatedByName,
+        DateTime CreatedAt,
+        DateTime? UpdatedAt,
+        List<ColumnBasicDto> Columns
+    );
+
     public sealed record WorkspaceDetailResponse(
         Guid Id,
         string Name,
         string? Description,
-        Guid OwnerId,
+        string OwnerName,
         DateTime CreatedAt,
         DateTime? UpdatedAt,
-        List<WorkspaceMemberDto> Members
+        List<BoardDto> Boards
     );
 
     public sealed record WorkspaceMemberDto(
