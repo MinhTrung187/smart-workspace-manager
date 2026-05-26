@@ -138,5 +138,30 @@ namespace SmartWorkspaceManager.API.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while deleting the column.", details = ex.Message });
             }
         }
+        [HttpPatch("{id:guid}/move")]
+        public async Task<ActionResult<ColumnResponse>> Move(Guid id, [FromBody] MoveColumnRequest request)
+        {
+            try
+            {
+                var result = await _columnService.MoveColumnAsync(id, request);
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while moving the column.", details = ex.Message });
+            }
+        }
     }
 }

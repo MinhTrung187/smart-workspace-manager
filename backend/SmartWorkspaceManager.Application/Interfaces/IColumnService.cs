@@ -12,5 +12,7 @@ namespace SmartWorkspaceManager.Application.Interfaces
         Task<ColumnResponse> GetColumnByIdAsync(Guid id);
         Task<ColumnResponse> UpdateColumnAsync(Guid id, UpdateColumnRequest request);
         Task DeleteColumnAsync(Guid id);
+        Task<ColumnResponse> MoveColumnAsync(Guid id, MoveColumnRequest request);
+
     }
 }

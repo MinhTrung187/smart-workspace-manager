@@ -9,7 +9,6 @@ namespace SmartWorkspaceManager.Application.DTOs
         public string? Description { get; set; }
         public DateTime? DueDate { get; set; }
         public string Priority { get; set; } = "Medium";
-        public int Position { get; set; }
     }
 
     public sealed class UpdateBoardTaskRequest

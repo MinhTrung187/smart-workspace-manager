@@ -63,10 +63,15 @@ namespace SmartWorkspaceManager.Application.Services
             if (!isMemberOrOwner)
                 throw new UnauthorizedAccessException("You are not a member of this workspace.");
 
-            // map priority string to enum if possible, fallback to Medium
             if (!Enum.TryParse<TaskPriority>(request.Priority, true, out var priority))
                 priority = TaskPriority.Medium;
 
+            var existingTasks = await _taskRepository.FindAsync(t => t.ColumnId == request.ColumnId, Array.Empty<string>());
+            var maxPosition = existingTasks.Any()
+                ? existingTasks.Max(t => t.Position)
+                : 0;
+
+            var newPosition = maxPosition + 1000;
             var task = new BoardTask
             {
                 ColumnId = request.ColumnId,
@@ -74,7 +79,7 @@ namespace SmartWorkspaceManager.Application.Services
                 Description = request.Description?.Trim(),
                 DueDate = request.DueDate,
                 Priority = priority,
-                Position = request.Position,
+                Position = newPosition,
                 CreatedBy = userId.Value
             };
 

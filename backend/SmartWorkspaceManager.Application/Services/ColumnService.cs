@@ -56,11 +56,19 @@ namespace SmartWorkspaceManager.Application.Services
             if (!isMemberOrOwner)
                 throw new UnauthorizedAccessException("You are not a member of this workspace.");
 
+            // Auto-increment position: start at 1000 for the first column, otherwise max+1
+            var existingColumns = await _columnRepository.FindAsync(c => c.BoardId == request.BoardId, Array.Empty<string>());
+            var maxPosition = existingColumns.Any()
+            ? existingColumns.Max(c => c.Position)
+            : 0;
+
+            var newPosition = maxPosition + 1000;
+
             var column = new Column
             {
                 BoardId = request.BoardId,
                 Name = request.Name.Trim(),
-                Position = request.Position
+                Position = newPosition
             };
 
             await _columnRepository.AddAsync(column);
@@ -159,7 +167,6 @@ namespace SmartWorkspaceManager.Application.Services
             if (workspace == null)
                 throw new KeyNotFoundException("Workspace not found.");
 
-            // Permission: only workspace owner may update columns (adjust if you want looser rules)
             if (workspace.OwnerId != userId.Value)
                 throw new UnauthorizedAccessException("Only the workspace owner can update columns.");
 
@@ -192,7 +199,6 @@ namespace SmartWorkspaceManager.Application.Services
             if (workspace == null)
                 throw new KeyNotFoundException("Workspace not found.");
 
-            // Permission: only workspace owner may delete columns (adjust as needed)
             if (workspace.OwnerId != userId.Value)
                 throw new UnauthorizedAccessException("Only the workspace owner can delete columns.");
 
@@ -200,5 +206,67 @@ namespace SmartWorkspaceManager.Application.Services
             _columnRepository.Update(column);
             await _columnRepository.SaveChangesAsync();
         }
+        public async Task<ColumnResponse> MoveColumnAsync(Guid id, MoveColumnRequest request)
+        {
+            var userId = _userContext.UserId;
+            if (userId == null || userId == Guid.Empty)
+                throw new UnauthorizedAccessException("User is not authenticated.");
+
+            var columnsFound = await _columnRepository.FindAsync(c => c.Id == id, "Board");
+            var column = columnsFound.FirstOrDefault();
+            if (column == null)
+                throw new KeyNotFoundException("Column not found.");
+
+            var board = column.Board ?? await _boardRepository.GetByIdAsync(column.BoardId);
+            if (board == null)
+                throw new KeyNotFoundException("Board not found.");
+
+            var workspaces = await _workspaceRepository.FindAsync(w => w.Id == board.WorkspaceId, "Members");
+            var workspace = workspaces.FirstOrDefault();
+            if (workspace == null)
+                throw new KeyNotFoundException("Workspace not found.");
+
+            if (workspace.OwnerId != userId.Value)
+                throw new UnauthorizedAccessException("Only the workspace owner can reorder columns.");
+
+            var allColumns = (await _columnRepository.FindAsync(c => c.BoardId == board.Id, Array.Empty<string>()))
+                .OrderBy(c => c.Position)
+                .ToList();
+
+            var currentIndex = allColumns.FindIndex(c => c.Id == column.Id);
+            if (currentIndex < 0)
+                throw new KeyNotFoundException("Column not found in board.");
+
+            var n = allColumns.Count;
+            var targetIndex = request.NewIndex;
+            if (targetIndex < 1) targetIndex = 1;
+            if (targetIndex > n) targetIndex = n;
+
+            if (targetIndex - 1 == currentIndex)
+            {
+                return new ColumnResponse(column.Id, column.BoardId, column.Name, column.Position, column.CreatedAt, column.UpdatedAt);
+            }
+
+            allColumns.RemoveAt(currentIndex);
+            allColumns.Insert(targetIndex - 1, column);
+
+            var position = 1000;
+            foreach (var col in allColumns)
+            {
+                if (col.Position != position)
+                {
+                    col.Position = position;
+                    col.Touch();
+                    _columnRepository.Update(col);
+                }
+                position += 1000; 
+            }
+
+            await _columnRepository.SaveChangesAsync();
+
+            var moved = allColumns.First(c => c.Id == column.Id);
+            return new ColumnResponse(moved.Id, moved.BoardId, moved.Name, moved.Position, moved.CreatedAt, moved.UpdatedAt);
+        }
     }
 }
+

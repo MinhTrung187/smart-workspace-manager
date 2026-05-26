@@ -14,7 +14,10 @@ namespace SmartWorkspaceManager.Application.DTOs
         public string Name { get; set; } = string.Empty;
         public int Position { get; set; }
     }
-
+    public sealed class MoveColumnRequest
+    {
+        public int NewIndex { get; set; }
+    }
     public sealed record ColumnResponse(
         Guid Id,
         Guid BoardId,
