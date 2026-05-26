@@ -9,5 +9,7 @@ namespace SmartWorkspaceManager.Application.Interfaces
         Task<WorkspaceResponse> CreateWorkspaceAsync(CreateWorkspaceRequest request);
         Task<UserWorkspacesResponse> GetWorkspacesOfUserAsync();
         Task<WorkspaceDetailResponse> GetWorkspaceByIdAsync(Guid id);
+        Task<WorkspaceResponse> InitializeWorkspaceAsync(CreateWorkspaceRequest request);
+
     }
 }

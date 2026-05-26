@@ -14,6 +14,8 @@ namespace SmartWorkspaceManager.Application.Services
         private readonly IGenericRepository<Workspace> _workspaceRepository;
         private readonly IGenericRepository<WorkspaceMember> _workspaceMemberRepository;
         private readonly IGenericRepository<WorkspaceInvitation> _workspaceInvitationRepository;
+        private readonly IGenericRepository<Board> _boardRepository;
+        private readonly IGenericRepository<Column> _columnRepository;
         private readonly IUserRepository _userRepository;
         private readonly IUserContext _userContext;
 
@@ -21,6 +23,8 @@ namespace SmartWorkspaceManager.Application.Services
             IGenericRepository<Workspace> workspaceRepository,
             IGenericRepository<WorkspaceMember> workspaceMemberRepository,
             IGenericRepository<WorkspaceInvitation> workspaceInvitationRepository,
+            IGenericRepository<Board> boardRepository,
+            IGenericRepository<Column> columnRepository,
             IUserRepository userRepository,
             IUserContext userContext)
         {
@@ -28,6 +32,8 @@ namespace SmartWorkspaceManager.Application.Services
             _workspaceMemberRepository = workspaceMemberRepository ?? throw new ArgumentNullException(nameof(workspaceMemberRepository));
             _workspaceInvitationRepository = workspaceInvitationRepository ?? throw new ArgumentNullException(nameof(workspaceInvitationRepository));
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            _boardRepository = boardRepository ?? throw new ArgumentNullException(nameof(boardRepository));
+            _columnRepository = columnRepository ?? throw new ArgumentNullException(nameof(columnRepository));
             _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
         }
 
@@ -89,7 +95,83 @@ namespace SmartWorkspaceManager.Application.Services
                 workspace.UpdatedAt
             );
         }
+        public async Task<WorkspaceResponse> InitializeWorkspaceAsync(CreateWorkspaceRequest request)
+        {
+            var ownerId = _userContext.UserId;
+            if (ownerId == null || ownerId == Guid.Empty)
+            {
+                throw new UnauthorizedAccessException("User is not authenticated. Please provide a valid JWT token.");
+            }
 
+            if (string.IsNullOrWhiteSpace(request.Name))
+            {
+                throw new ArgumentException("Workspace name is required.");
+            }
+
+            if (request.Name.Length > 200)
+            {
+                throw new ArgumentException("Workspace name cannot exceed 200 characters.");
+            }
+
+            var owner = await _userRepository.GetByIdAsync(ownerId.Value);
+            if (owner == null)
+            {
+                throw new KeyNotFoundException("Owner user not found.");
+            }
+
+            var workspace = new Workspace
+            {
+                Name = request.Name.Trim(),
+                Description = request.Description?.Trim(),
+                OwnerId = ownerId.Value
+            };
+
+            var member = new WorkspaceMember
+            {
+                UserId = ownerId.Value,
+                WorkspaceId = workspace.Id,
+                Role = WorkspaceRole.Owner,
+                JoinedAt = DateTime.UtcNow
+            };
+            workspace.Members.Add(member);
+
+            await _workspaceRepository.AddAsync(workspace);
+            await _workspaceRepository.SaveChangesAsync();
+
+            var board = new Board
+            {
+                WorkspaceId = workspace.Id,
+                Name = "General",
+                CreatedBy = ownerId.Value
+            };
+
+            await _boardRepository.AddAsync(board);
+            await _boardRepository.SaveChangesAsync();
+
+            var defaultColumns = new[]
+            {
+                new Column { BoardId = board.Id, Name = "Todo", Position = 1000 },
+                new Column { BoardId = board.Id, Name = "In Progress", Position = 2000 },
+                new Column { BoardId = board.Id, Name = "Review", Position = 3000 },
+                new Column { BoardId = board.Id, Name = "Done", Position = 4000 }
+            };
+
+            foreach (var col in defaultColumns)
+            {
+                await _columnRepository.AddAsync(col);
+            }
+
+            await _columnRepository.SaveChangesAsync();
+
+            return new WorkspaceResponse(
+                workspace.Id,
+                workspace.Name,
+                workspace.Description,
+                workspace.OwnerId,
+                workspace.CreatedAt,
+                workspace.UpdatedAt
+            );
+        }
         public async Task<UserWorkspacesResponse> GetWorkspacesOfUserAsync()
         {
             var userId = _userContext.UserId;

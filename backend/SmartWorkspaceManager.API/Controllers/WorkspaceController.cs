@@ -46,6 +46,31 @@ namespace SmartWorkspaceManager.API.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while creating the workspace.", details = ex.Message });
             }
         }
+        [HttpPost("initialize")]
+        public async Task<ActionResult<WorkspaceResponse>> Initialize([FromBody] CreateWorkspaceRequest request)
+        {
+            try
+            {
+                var workspace = await _workspaceService.InitializeWorkspaceAsync(request);
+                return CreatedAtAction(nameof(Initialize), new { id = workspace.Id }, workspace);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while initializing the workspace.", details = ex.Message });
+            }
+        }
 
         [HttpGet]
         public async Task<ActionResult<UserWorkspacesResponse>> GetAll()
