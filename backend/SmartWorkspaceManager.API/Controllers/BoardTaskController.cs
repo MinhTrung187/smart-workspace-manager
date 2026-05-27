@@ -138,5 +138,30 @@ namespace SmartWorkspaceManager.API.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while deleting the task.", details = ex.Message });
             }
         }
+        [HttpPatch("{id:guid}/move")]
+        public async Task<ActionResult<BoardTaskResponse>> Move(Guid id, [FromBody] MoveTaskRequest request)
+        {
+            try
+            {
+                var task = await _taskService.MoveTaskAsync(id, request);
+                return Ok(task);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while moving the task.", details = ex.Message });
+            }
+        }
     }
 }

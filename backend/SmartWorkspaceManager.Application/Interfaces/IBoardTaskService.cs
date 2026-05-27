@@ -12,5 +12,7 @@ namespace SmartWorkspaceManager.Application.Interfaces
         Task<BoardTaskResponse> GetTaskByIdAsync(Guid id);
         Task<BoardTaskResponse> UpdateTaskAsync(Guid id, UpdateBoardTaskRequest request);
         Task DeleteTaskAsync(Guid id);
+        Task<BoardTaskResponse> MoveTaskAsync(Guid id, MoveTaskRequest request);
+
     }
 }

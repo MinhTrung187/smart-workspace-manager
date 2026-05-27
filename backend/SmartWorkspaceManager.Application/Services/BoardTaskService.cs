@@ -287,5 +287,166 @@ namespace SmartWorkspaceManager.Application.Services
             _taskRepository.Update(task);
             await _taskRepository.SaveChangesAsync();
         }
+        public async Task<BoardTaskResponse> MoveTaskAsync(Guid id, MoveTaskRequest request)
+        {
+            var userId = _userContext.UserId;
+            if (userId == null || userId == Guid.Empty)
+                throw new UnauthorizedAccessException("User is not authenticated.");
+
+            var tasksFound = await _taskRepository.FindAsync(t => t.Id == id, "Column");
+            var task = tasksFound.FirstOrDefault();
+            if (task == null)
+                throw new KeyNotFoundException("Task not found.");
+
+            var sourceColumn = task.Column ?? await _columnRepository.GetByIdAsync(task.ColumnId);
+            if (sourceColumn == null)
+                throw new KeyNotFoundException("Source column not found.");
+
+            var sourceBoard = await _boardRepository.GetByIdAsync(sourceColumn.BoardId);
+            if (sourceBoard == null)
+                throw new KeyNotFoundException("Board not found.");
+
+            var workspaces = await _workspaceRepository.FindAsync(w => w.Id == sourceBoard.WorkspaceId, "Members");
+            var workspace = workspaces.FirstOrDefault();
+            if (workspace == null)
+                throw new KeyNotFoundException("Workspace not found.");
+
+            var isAllowed = workspace.OwnerId == userId.Value || task.CreatedBy == userId.Value;
+            if (!isAllowed)
+                throw new UnauthorizedAccessException("You do not have permission to move this task.");
+
+            var targetColumn = await _columnRepository.GetByIdAsync(request.TargetColumnId);
+            if (targetColumn == null)
+                throw new KeyNotFoundException("Target column not found.");
+
+            var targetBoard = await _boardRepository.GetByIdAsync(targetColumn.BoardId);
+            if (targetBoard == null || targetBoard.WorkspaceId != sourceBoard.WorkspaceId)
+                throw new InvalidOperationException("Target column must belong to the same workspace.");
+
+            if (targetColumn.Id == sourceColumn.Id)
+            {
+                var tasksInColumn = (await _taskRepository.FindAsync(t => t.ColumnId == sourceColumn.Id, Array.Empty<string>()))
+                    .OrderBy(t => t.Position)
+                    .ToList();
+
+                var currentIndex = tasksInColumn.FindIndex(t => t.Id == task.Id);
+                if (currentIndex < 0) throw new KeyNotFoundException("Task not found in source column.");
+
+                var n = tasksInColumn.Count;
+                var targetIndex = request.NewIndex;
+                if (targetIndex < 1) targetIndex = 1;
+                if (targetIndex > n) targetIndex = n;
+
+                if (targetIndex - 1 == currentIndex)
+                {
+                    return new BoardTaskResponse(
+                        task.Id,
+                        task.ColumnId,
+                        task.Title,
+                        task.Description,
+                        task.DueDate,
+                        task.Priority.ToString(),
+                        task.Position,
+                        task.CreatedBy,
+                        task.CreatedAt,
+                        task.UpdatedAt
+                    );
+                }
+
+                tasksInColumn.RemoveAt(currentIndex);
+                tasksInColumn.Insert(targetIndex - 1, task);
+
+                var pos = 1000;
+
+                foreach (var t in tasksInColumn)
+                {
+                    if (t.Position != pos)
+                    {
+                        t.Position = pos;
+                        t.Touch();
+                        _taskRepository.Update(t);
+                    }
+
+                    pos += 1000;
+                }
+
+                await _taskRepository.SaveChangesAsync();
+
+                var moved = tasksInColumn.First(t => t.Id == task.Id);
+                return new BoardTaskResponse(
+                    moved.Id,
+                    moved.ColumnId,
+                    moved.Title,
+                    moved.Description,
+                    moved.DueDate,
+                    moved.Priority.ToString(),
+                    moved.Position,
+                    moved.CreatedBy,
+                    moved.CreatedAt,
+                    moved.UpdatedAt
+                );
+            }
+
+
+            var sourceTasks = (await _taskRepository.FindAsync(t => t.ColumnId == sourceColumn.Id, Array.Empty<string>()))
+                .OrderBy(t => t.Position)
+                .ToList();
+
+            var targetTasks = (await _taskRepository.FindAsync(t => t.ColumnId == targetColumn.Id, Array.Empty<string>()))
+                .OrderBy(t => t.Position)
+                .ToList();
+
+            sourceTasks.RemoveAll(t => t.Id == task.Id);
+
+            var m = targetTasks.Count;
+            var targetIndex2 = request.NewIndex;
+            if (targetIndex2 < 1) targetIndex2 = 1;
+            if (targetIndex2 > m + 1) targetIndex2 = m + 1;
+
+
+            task.ColumnId = targetColumn.Id;
+            targetTasks.Insert(targetIndex2 - 1, task);
+
+            var posS = 1000;
+            foreach (var t in sourceTasks)
+            {
+                if (t.Position != posS)
+                {
+                    t.Position = posS;
+                    t.Touch();
+                    _taskRepository.Update(t);
+                }
+                posS+=1000;
+            }
+
+            var posT = 1000;
+            foreach (var t in targetTasks)
+            {
+                if (t.Position != posT || t.ColumnId != targetColumn.Id)
+                {
+                    t.Position = posT;
+                    t.ColumnId = targetColumn.Id;
+                    t.Touch();
+                    _taskRepository.Update(t);
+                }
+                posT+=1000;
+            }
+
+            await _taskRepository.SaveChangesAsync();
+
+            var movedTask = targetTasks.First(t => t.Id == task.Id);
+            return new BoardTaskResponse(
+                movedTask.Id,
+                movedTask.ColumnId,
+                movedTask.Title,
+                movedTask.Description,
+                movedTask.DueDate,
+                movedTask.Priority.ToString(),
+                movedTask.Position,
+                movedTask.CreatedBy,
+                movedTask.CreatedAt,
+                movedTask.UpdatedAt
+            );
+        }
     }
 }

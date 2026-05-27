@@ -21,6 +21,13 @@ namespace SmartWorkspaceManager.Application.DTOs
         public Guid? ColumnId { get; set; }
     }
 
+    public sealed class MoveTaskRequest
+    {
+        public Guid TargetColumnId { get; set; }
+
+        public int NewIndex { get; set; }
+    }
+
     public sealed record BoardTaskResponse(
         Guid Id,
         Guid ColumnId,
