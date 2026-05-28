@@ -9,7 +9,8 @@ export const useLoginMutation = () => {
   return useMutation({
     mutationFn: (data: LoginRequest) => loginUser(data),
     onSuccess: (data) => {
-      localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('accessToken', data.token);
+      localStorage.setItem('tokenExpiresAt', data.expiresAt);
       navigate('/dashboard');
     },
   });

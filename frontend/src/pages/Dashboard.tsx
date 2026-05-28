@@ -1,8 +1,12 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { LayoutTemplate, LogOut } from 'lucide-react';
+import { LayoutTemplate, LogOut, Plus } from 'lucide-react';
+import WorkspaceList from '../features/workspace/components/WorkspaceList';
+import CreateWorkspaceModal from '../features/workspace/components/CreateWorkspaceModal';
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
@@ -11,7 +15,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-2">
@@ -32,10 +36,26 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm text-center">
-             <h1 className="text-2xl font-semibold text-slate-900">Welcome to the Dashboard</h1>
-             <p className="mt-2 text-slate-500">You have successfully signed in. Project management interface will appear here.</p>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Your Workspaces</h1>
+            <p className="text-sm text-slate-500 font-medium mt-1">Select a workspace to view its boards and tasks.</p>
+          </div>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 border border-transparent shadow-sm text-sm font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            New Workspace
+          </button>
         </div>
+
+        <WorkspaceList onCreateClick={() => setIsModalOpen(true)} />
+
+        <CreateWorkspaceModal 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+        />
       </main>
     </div>
   );

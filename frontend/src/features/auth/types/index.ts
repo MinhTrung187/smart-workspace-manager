@@ -7,7 +7,8 @@ export interface UserDto {
 
 export interface AuthResponse {
   user: UserDto;
-  accessToken: string;
+  token: string;
+  expiresAt: string;
 }
 
 export interface LoginRequest {
