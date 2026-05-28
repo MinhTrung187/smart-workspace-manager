@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { CreateWorkspaceRequest, GetAllWorkspacesResponse, WorkspaceDetailDto, WorkspaceSummaryDto } from '../types';
 
-const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL ;
 
 
 
