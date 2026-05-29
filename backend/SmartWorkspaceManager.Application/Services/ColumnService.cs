@@ -56,7 +56,7 @@ namespace SmartWorkspaceManager.Application.Services
             if (!isMemberOrOwner)
                 throw new UnauthorizedAccessException("You are not a member of this workspace.");
 
-            // Auto-increment position: start at 1000 for the first column, otherwise max+1
+            // Auto-increment position: start at 1000 for the first column, otherwise max+1000.
             var existingColumns = await _columnRepository.FindAsync(c => c.BoardId == request.BoardId, Array.Empty<string>());
             var maxPosition = existingColumns.Any()
             ? existingColumns.Max(c => c.Position)
