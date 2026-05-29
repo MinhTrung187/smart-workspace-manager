@@ -4,7 +4,6 @@ import type { TaskDto } from '../types';
 import { Calendar, Flag } from 'lucide-react';
 
 interface TaskCardProps {
-  key?: string | number;
   task: TaskDto;
   isOverlay?: boolean;
 }
@@ -28,7 +27,7 @@ export default function TaskCard({ task, isOverlay }: TaskCardProps) {
       <div
         ref={setNodeRef}
         style={style}
-        className="h-25 w-full rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 opacity-50"
+        className="h-[6.25rem] w-full rounded-xl border-2 border-dashed border-indigo-300 bg-indigo-50 opacity-60"
       />
     );
   }
@@ -46,18 +45,18 @@ export default function TaskCard({ task, isOverlay }: TaskCardProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative flex flex-col gap-3 p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow group ${isOverlay ? 'cursor-grabbing scale-[1.02] shadow-xl rotate-2 ring-1 ring-slate-200' : 'cursor-grab'}`}
+      className={`relative flex flex-col gap-3 p-3.5 bg-white rounded-xl border border-slate-300 shadow-sm hover:border-indigo-300 hover:shadow-md transition-shadow group ${isOverlay ? 'cursor-grabbing scale-[1.02] shadow-xl rotate-2 ring-1 ring-indigo-200' : 'cursor-grab'}`}
       {...attributes}
       {...listeners}
     >
       <div className="flex justify-between items-start gap-2">
-        <h4 className="text-sm font-semibold text-slate-800 leading-snug">
+        <h4 className="text-sm font-bold text-slate-950 leading-snug">
           {task.title}
         </h4>
       </div>
       
       {task.description && (
-        <p className="text-xs text-slate-500 line-clamp-2">
+        <p className="text-xs text-slate-600 line-clamp-2">
           {task.description}
         </p>
       )}
@@ -71,8 +70,8 @@ export default function TaskCard({ task, isOverlay }: TaskCardProps) {
             </span>
           )}
           {task.dueDate && (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium tracking-wide leading-4 text-slate-600 bg-slate-100 ring-1 ring-inset ring-slate-500/10 gap-1 mt-auto">
-              <Calendar className="w-3 h-3 text-slate-400" />
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide leading-4 text-sky-700 bg-sky-50 ring-1 ring-inset ring-sky-200 gap-1">
+              <Calendar className="w-3 h-3 text-sky-500" />
               {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
           )}

@@ -136,10 +136,16 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
     }
   };
 
-  if (!columns.length) return null;
+  if (!columns.length) {
+    return (
+      <div className="flex min-h-[18rem] items-center justify-center rounded-xl border-2 border-dashed border-indigo-300 bg-white text-sm font-semibold text-indigo-500">
+        This board has no columns yet.
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-full w-full overflow-x-auto overflow-y-hidden pb-4">
+    <div className="w-full min-w-0 overflow-x-auto overflow-y-hidden pb-4">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -147,7 +153,7 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
         onDragOver={onDragOver}
         onDragEnd={onDragEnd}
       >
-        <div className="flex items-start gap-6 px-2">
+        <div className="flex w-max items-start gap-6 px-2">
           <SortableContext items={columnIds} strategy={horizontalListSortingStrategy}>
             {columns.map((col) => (
               <ColumnContainer
@@ -158,7 +164,7 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
             ))}
           </SortableContext>
           
-          <button className="w-[320px] shrink-0 bg-slate-100/40 hover:bg-slate-100/80 rounded-2xl p-4 border-2 border-dashed border-slate-200/80 hover:border-indigo-300 transition-all flex items-center justify-center gap-2 text-slate-500 font-medium text-sm h-25 hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+          <button className="h-[6.25rem] w-[320px] shrink-0 bg-white hover:bg-indigo-50 rounded-2xl p-4 border-2 border-dashed border-indigo-300 hover:border-indigo-500 transition-all flex items-center justify-center gap-2 text-indigo-600 font-semibold text-sm hover:text-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
             <Plus className="w-4 h-4" />
             Add Section
           </button>

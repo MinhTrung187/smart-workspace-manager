@@ -14,7 +14,7 @@ export default function BoardDetail() {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="flex justify-center items-center gap-3">
             <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-sm font-medium text-slate-600">Loading workspace...</span>
+            <span className="text-sm font-medium text-slate-600">Loading board...</span>
         </div>
       </div>
     );
@@ -44,8 +44,8 @@ export default function BoardDetail() {
   });
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+    <div className="h-screen overflow-hidden bg-slate-100 flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900">
+      <header className="shrink-0 bg-white border-b border-slate-300 sticky top-0 z-20 shadow-sm">
         <div className="w-full h-14 px-4 flex items-center justify-between">
           <div className="flex items-center gap-3 overflow-hidden">
              <Link 
@@ -54,9 +54,9 @@ export default function BoardDetail() {
              >
                <ArrowLeft className="w-4 h-4" />
              </Link>
-             <div className="h-4 w-px bg-slate-200 shrink-0"></div>
+             <div className="h-4 w-px bg-slate-300 shrink-0"></div>
              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-7 h-7 bg-indigo-600 rounded-md shrink-0 flex items-center justify-center shadow-sm shadow-indigo-200/50">
+                <div className="w-7 h-7 bg-indigo-600 rounded-md shrink-0 flex items-center justify-center shadow-sm shadow-indigo-300/60">
                   <LayoutPanelTop className="w-3.5 h-3.5 text-white" />
                 </div>
                 <div className="flex items-center gap-1.5 min-w-0 truncate text-sm">
@@ -78,9 +78,9 @@ export default function BoardDetail() {
                 </div>
              </div>
              
-             <div className="hidden md:block h-4 w-px bg-slate-200 mx-1"></div>
+             <div className="hidden md:block h-4 w-px bg-slate-300 mx-1"></div>
 
-             <button className="h-8 px-3 inline-flex items-center justify-center gap-1.5 text-sm font-medium text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors shadow-sm">
+             <button className="h-8 px-3 inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 hover:text-indigo-900 rounded-lg transition-colors shadow-sm">
                <Share2 className="w-3.5 h-3.5" />
                <span className="hidden sm:inline">Share</span>
              </button>
@@ -92,12 +92,12 @@ export default function BoardDetail() {
       </header>
 
       <main className="flex-1 flex flex-col min-h-0">
-        <div className="bg-white border-b border-slate-200/60 pb-0.5 shadow-[0_1px_3px_rgba(0,0,0,0.01)]">
+        <div className="shrink-0 bg-white border-b border-slate-300 pb-0.5 shadow-sm">
           <div className="px-4 sm:px-6 py-6 sm:py-8 max-w-450 w-full mx-auto">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div className="w-full flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
-                   <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold tracking-wider text-indigo-700 bg-indigo-50 ring-1 ring-inset ring-indigo-600/10 uppercase">
+                   <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold tracking-wider text-indigo-800 bg-indigo-100 ring-1 ring-inset ring-indigo-300 uppercase">
                      {board.workspaceName || 'Board'}
                    </span>
                 </div>
@@ -106,8 +106,8 @@ export default function BoardDetail() {
                 </h2>
               </div>
               <div className="flex items-center shrink-0">
-                 <button className="h-9 px-4 inline-flex items-center justify-center gap-2 text-sm font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-all shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                    <Filter className="w-4 h-4 text-slate-400" />
+                 <button className="h-9 px-4 inline-flex items-center justify-center gap-2 text-sm font-semibold text-slate-800 bg-white border border-slate-400 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-800 rounded-lg transition-all shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <Filter className="w-4 h-4 text-indigo-500" />
                     Filter Tasks
                  </button>
               </div>
