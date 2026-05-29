@@ -70,11 +70,11 @@ namespace SmartWorkspaceManager.API.Controllers
         }
 
         [HttpGet("{id:guid}")]
-        public async Task<ActionResult<BoardResponse>> GetById(Guid id)
+        public async Task<ActionResult<BoardDetailResponse>> GetById(Guid id, [FromQuery] BoardQueryOptions? options)
         {
             try
             {
-                var board = await _boardService.GetBoardByIdAsync(id);
+                var board = await _boardService.GetBoardByIdAsync(id, options);
                 return Ok(board);
             }
             catch (UnauthorizedAccessException ex)
