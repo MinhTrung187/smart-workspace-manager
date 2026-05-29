@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -6,15 +6,17 @@ import {
   KeyboardSensor,
   PointerSensor,
   useSensor,
-  useSensors,
+  useSensors
 } from '@dnd-kit/core';
-import type { DragStartEvent, DragOverEvent, DragEndEvent } from '@dnd-kit/core';
+import type { FormEvent, KeyboardEvent } from 'react';
+import type { DragStartEvent, DragOverEvent, DragEndEvent }from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import type { BoardDetailResponse, ColumnDto } from '../../column/types';
 import type { TaskDto } from '../../task/types';
 import ColumnContainer from '../../column/components/ColumnContainer';
 import TaskCard from '../../task/components/TaskCard';
-import { Plus } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
+import { useCreateColumn } from '../../column/hooks/useColumnMutations';
 
 interface KanbanBoardProps {
   board: BoardDetailResponse;
@@ -28,11 +30,24 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
   const [activeColumn, setActiveColumn] = useState<ColumnDto | null>(null);
   const [activeTask, setActiveTask] = useState<TaskDto | null>(null);
 
+  // Add column state
+  const [isAddingColumn, setIsAddingColumn] = useState(false);
+  const [newColumnName, setNewColumnName] = useState('');
+  const addColumnInputRef = useRef<HTMLInputElement>(null);
+
+  const createColumnMutation = useCreateColumn(board.id);
+
   // Sync state when board prop updates via react-query
   useEffect(() => {
     setColumns(board.columns || []);
     setTasks((board.columns || []).flatMap((col) => col.tasks || []));
   }, [board]);
+
+  useEffect(() => {
+    if (isAddingColumn && addColumnInputRef.current) {
+      addColumnInputRef.current.focus();
+    }
+  }, [isAddingColumn]);
 
   const columnIds = useMemo(() => columns.map((col) => col.id), [columns]);
 
@@ -44,6 +59,27 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
     }),
     useSensor(KeyboardSensor)
   );
+
+  const handleAddColumnSubmit = (e?: FormEvent) => {
+    e?.preventDefault();
+    if (newColumnName.trim()) {
+      createColumnMutation.mutate({ name: newColumnName.trim() }, {
+        onSuccess: () => {
+          setNewColumnName('');
+          setIsAddingColumn(false);
+        }
+      });
+    } else {
+      setIsAddingColumn(false);
+    }
+  };
+
+  const handleAddColumnKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setIsAddingColumn(false);
+      setNewColumnName('');
+    }
+  };
 
   const onDragStart = (event: DragStartEvent) => {
     const { active } = event;
@@ -136,14 +172,6 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
     }
   };
 
-  if (!columns.length) {
-    return (
-      <div className="flex min-h-[18rem] items-center justify-center rounded-xl border-2 border-dashed border-indigo-300 bg-white text-sm font-semibold text-indigo-500">
-        This board has no columns yet.
-      </div>
-    );
-  }
-
   return (
     <div className="w-full min-w-0 overflow-x-auto overflow-y-hidden pb-4">
       <DndContext
@@ -164,10 +192,46 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
             ))}
           </SortableContext>
           
-          <button className="h-[6.25rem] w-[320px] shrink-0 bg-white hover:bg-indigo-50 rounded-2xl p-4 border-2 border-dashed border-indigo-300 hover:border-indigo-500 transition-all flex items-center justify-center gap-2 text-indigo-600 font-semibold text-sm hover:text-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-            <Plus className="w-4 h-4" />
-            Add Section
-          </button>
+          {isAddingColumn ? (
+            <div className="w-[320px] shrink-0 bg-white rounded-2xl border border-slate-300 p-3 shadow-sm h-min">
+              <form onSubmit={handleAddColumnSubmit} className="flex flex-col gap-2">
+                <input
+                  ref={addColumnInputRef}
+                  type="text"
+                  placeholder="Enter section name..."
+                  value={newColumnName}
+                  onChange={(e) => setNewColumnName(e.target.value)}
+                  onKeyDown={handleAddColumnKeyDown}
+                  className="w-full bg-slate-50 border border-indigo-500 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  disabled={createColumnMutation.isPending}
+                />
+                <div className="flex items-center gap-2 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingColumn(false)}
+                    className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={createColumnMutation.isPending || !newColumnName.trim()}
+                    className="px-3 py-1.5 text-sm font-semibold text-white bg-indigo-600 rounded-lg shadow-sm hover:bg-indigo-700 transition-colors focus:ring-2 focus:ring-indigo-500 focus:outline-none focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Add
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : (
+            <button 
+              onClick={() => setIsAddingColumn(true)}
+              className="h-25 w-[320px] shrink-0 bg-white hover:bg-indigo-50 rounded-2xl p-4 border-2 border-dashed border-indigo-300 hover:border-indigo-500 transition-all flex items-center justify-center gap-2 text-indigo-600 font-semibold text-sm hover:text-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Section
+            </button>
+          )}
         </div>
 
         <DragOverlay>

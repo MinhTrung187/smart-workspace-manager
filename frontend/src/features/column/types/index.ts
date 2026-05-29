@@ -7,6 +7,15 @@ export interface ColumnDto {
   position: number;
   tasks: TaskDto[];
 }
+export interface CreateColumnRequest {
+  boardId: string;
+  name: string;
+}
+
+export interface UpdateColumnRequest {
+  name: string;
+  position: number;
+}
 
 export interface BoardDetailResponse {
   id: string;
