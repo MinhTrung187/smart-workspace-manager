@@ -4,11 +4,13 @@ import type { TaskDto } from '../types';
 import { Calendar, Flag } from 'lucide-react';
 
 interface TaskCardProps {
+  key?: string | number;
   task: TaskDto;
   isOverlay?: boolean;
+  onEdit?: () => void;
 }
 
-export default function TaskCard({ task, isOverlay }: TaskCardProps) {
+export default function TaskCard({ task, isOverlay, onEdit }: TaskCardProps) {
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({
     id: task.id,
     data: {
@@ -40,12 +42,22 @@ export default function TaskCard({ task, isOverlay }: TaskCardProps) {
       default: return 'text-slate-600 bg-slate-50 ring-slate-500/20';
     }
   };
+    const getPriorityStyle = (priority?: string) => {
+    switch (priority) {
+      case 'High': return 'border-l-4 border-l-red-500 bg-red-50/30 dark:bg-red-950/5 border-y-slate-200 border-r-slate-200';
+      case 'Medium': return 'border-l-4 border-l-amber-500 bg-amber-50/30 dark:bg-amber-950/5 border-y-slate-200 border-r-slate-200';
+      case 'Low':
+default:
+  return 'border-l-4 border-l-green-500 bg-slate-50/20 dark:bg-green-950/5 border-y-slate-200 border-r-slate-200';
+    }
+  };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative flex flex-col gap-3 p-3.5 bg-white rounded-xl border border-slate-300 shadow-sm hover:border-indigo-300 hover:shadow-md transition-shadow group ${isOverlay ? 'cursor-grabbing scale-[1.02] shadow-xl rotate-2 ring-1 ring-indigo-200' : 'cursor-grab'}`}
+      onClick={onEdit}
+      className={`relative flex flex-col gap-3 p-3.5 rounded-xl border shadow-sm hover:shadow-md transition-shadow group ${getPriorityStyle(task.priority)} ${isOverlay ? 'cursor-grabbing scale-[1.02] shadow-xl rotate-2 ring-1 ring-slate-200' : 'cursor-grab'}`}
       {...attributes}
       {...listeners}
     >

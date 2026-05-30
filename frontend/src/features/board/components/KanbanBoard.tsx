@@ -17,6 +17,7 @@ import ColumnContainer from '../../column/components/ColumnContainer';
 import TaskCard from '../../task/components/TaskCard';
 import { Plus, X } from 'lucide-react';
 import { useCreateColumn } from '../../column/hooks/useColumnMutations';
+import TaskModal from '../../task/components/TaskModal';
 
 interface KanbanBoardProps {
   board: BoardDetailResponse;
@@ -35,6 +36,11 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
   const [newColumnName, setNewColumnName] = useState('');
   const addColumnInputRef = useRef<HTMLInputElement>(null);
 
+    // Task modal state
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [taskModalMode, setTaskModalMode] = useState<'create' | 'edit'>('create');
+  const [taskModalColumnId, setTaskModalColumnId] = useState<string>('');
+  const [taskModalTask, setTaskModalTask] = useState<TaskDto | null>(null);
   const createColumnMutation = useCreateColumn(board.id);
 
   // Sync state when board prop updates via react-query
@@ -79,6 +85,19 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
       setIsAddingColumn(false);
       setNewColumnName('');
     }
+  };
+    const handleAddTask = (columnId: string) => {
+    setTaskModalMode('create');
+    setTaskModalColumnId(columnId);
+    setTaskModalTask(null);
+    setIsTaskModalOpen(true);
+  };
+
+  const handleEditTask = (task: TaskDto) => {
+    setTaskModalMode('edit');
+    setTaskModalColumnId(task.columnId);
+    setTaskModalTask(task);
+    setIsTaskModalOpen(true);
   };
 
   const onDragStart = (event: DragStartEvent) => {
@@ -188,6 +207,8 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
                 key={col.id}
                 column={col}
                 tasks={tasks.filter((task) => task.columnId === col.id)}
+                onAddTask={handleAddTask}
+                onEditTask={handleEditTask}
               />
             ))}
           </SortableContext>
@@ -245,6 +266,15 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
           {activeTask && <TaskCard task={activeTask} isOverlay />}
         </DragOverlay>
       </DndContext>
+      
+      <TaskModal
+        isOpen={isTaskModalOpen}
+        onClose={() => setIsTaskModalOpen(false)}
+        boardId={board.id}
+        mode={taskModalMode}
+        columnId={taskModalColumnId}
+        task={taskModalTask}
+      />
     </div>
   );
 }

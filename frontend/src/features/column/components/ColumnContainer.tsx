@@ -13,9 +13,11 @@ interface ColumnContainerProps {
   column: ColumnDto ;
   tasks: TaskDto[];
   isOverlay?: boolean;
+  onAddTask?: (columnId: string) => void;
+  onEditTask?: (task: TaskDto) => void;
 }
 
-export default function ColumnContainer({ column, tasks, isOverlay }: ColumnContainerProps) {
+export default function ColumnContainer({ column, tasks, isOverlay,  onAddTask, onEditTask }: ColumnContainerProps) {
   const taskIds = useMemo(() => tasks.map((t) => t.id), [tasks]);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(column.name);
@@ -131,7 +133,7 @@ export default function ColumnContainer({ column, tasks, isOverlay }: ColumnCont
       <div className="flex-1 overflow-y-auto px-3 pb-2 flex flex-col gap-3 min-h-37.5">
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
           {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} />
+            <TaskCard key={task.id} task={task} onEdit={() => onEditTask?.(task)} />
           ))}
           {tasks.length === 0 && (
             <div className="flex items-center justify-center p-6 border-2 border-dashed border-indigo-300 bg-indigo-50/60 rounded-xl text-sm font-semibold text-indigo-400 mt-2">
@@ -143,7 +145,10 @@ export default function ColumnContainer({ column, tasks, isOverlay }: ColumnCont
 
       {/* Footer -> Add Task button */}
       <div className="p-3 mt-auto">
-        <button className="flex items-center gap-1 w-full py-1.5 px-2 text-sm font-semibold text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition-colors">
+        <button
+          onClick={() => onAddTask?.(column.id)}
+          className="flex items-center gap-1 w-full py-1.5 px-2 text-sm font-semibold text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition-colors"
+        >
           <Plus className="w-4 h-4" />
           Add task
         </button>
