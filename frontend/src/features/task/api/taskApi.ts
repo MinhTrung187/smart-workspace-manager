@@ -30,3 +30,7 @@ export const updateTask = async (id: string, data: UpdateTaskRequest): Promise<v
 export const deleteTask = async (id: string): Promise<void> => {
   await apiClient.delete(`/BoardTask/${id}`);
 };
+
+export const moveTask = async (id: string, targetColumnId: string, newIndex: number): Promise<void> => {
+  await apiClient.patch(`/BoardTask/${id}/move`, { targetColumnId, newIndex });
+};

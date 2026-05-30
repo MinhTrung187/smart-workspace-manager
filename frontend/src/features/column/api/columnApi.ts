@@ -32,3 +32,6 @@ export const updateColumn = async (id: string, data: UpdateColumnRequest): Promi
 export const deleteColumn = async (id: string): Promise<void> => {
   await apiClient.delete(`/Column/${id}`);
 };
+export const moveColumn = async (id: string, newIndex: number): Promise<void> => {
+  await apiClient.patch(`/Column/${id}/move`, { newIndex });
+};

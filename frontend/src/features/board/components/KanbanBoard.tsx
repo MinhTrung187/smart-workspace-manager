@@ -16,37 +16,41 @@ import type { TaskDto } from '../../task/types';
 import ColumnContainer from '../../column/components/ColumnContainer';
 import TaskCard from '../../task/components/TaskCard';
 import { Plus, X } from 'lucide-react';
-import { useCreateColumn } from '../../column/hooks/useColumnMutations';
+import { useCreateColumn, useMoveColumn } from '../../column/hooks/useColumnMutations';
+import { useMoveTask } from '../../task/hooks/useTaskMutations';
 import TaskModal from '../../task/components/TaskModal';
+
 
 interface KanbanBoardProps {
   board: BoardDetailResponse;
 }
 
 export default function KanbanBoard({ board }: KanbanBoardProps) {
-  // Local state for optimistic drag-and-drop updates
-  const [columns, setColumns] = useState<ColumnDto[]>(board.columns || []);
+  const [columns, setColumns] = useState<ColumnDto[]>([]);
   const [tasks, setTasks] = useState<TaskDto[]>([]);
 
   const [activeColumn, setActiveColumn] = useState<ColumnDto | null>(null);
   const [activeTask, setActiveTask] = useState<TaskDto | null>(null);
 
-  // Add column state
   const [isAddingColumn, setIsAddingColumn] = useState(false);
   const [newColumnName, setNewColumnName] = useState('');
   const addColumnInputRef = useRef<HTMLInputElement>(null);
 
-    // Task modal state
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [taskModalMode, setTaskModalMode] = useState<'create' | 'edit'>('create');
   const [taskModalColumnId, setTaskModalColumnId] = useState<string>('');
   const [taskModalTask, setTaskModalTask] = useState<TaskDto | null>(null);
   const createColumnMutation = useCreateColumn(board.id);
+  const moveColumnMutation = useMoveColumn(board.id);
+  const moveTaskMutation = useMoveTask(board.id);
 
-  // Sync state when board prop updates via react-query
+
   useEffect(() => {
-    setColumns(board.columns || []);
-    setTasks((board.columns || []).flatMap((col) => col.tasks || []));
+    const sortedCols = [...(board.columns || [])].sort((a, b) => a.position - b.position);
+    setColumns(sortedCols);
+    
+    const allTasks = sortedCols.flatMap(c => c.tasks || []);
+    setTasks(allTasks.sort((a, b) => a.position - b.position));
   }, [board]);
 
   useEffect(() => {
@@ -55,14 +59,10 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
     }
   }, [isAddingColumn]);
 
-  const columnIds = useMemo(() => columns.map((col) => col.id), [columns]);
+  const columnIds = useMemo(() => columns.map(col => col.id), [columns]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5, // 5px movement threshold before initiating drag
-      },
-    }),
+   const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor)
   );
 
@@ -129,9 +129,9 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
 
     // Moving a Task over another Task
     if (isActiveTask && isOverTask) {
-      setTasks((prevTasks) => {
-        const activeIndex = prevTasks.findIndex((t) => t.id === activeId);
-        const overIndex = prevTasks.findIndex((t) => t.id === overId);
+      setTasks(prevTasks => {
+        const activeIndex = prevTasks.findIndex(t => t.id === activeId);
+        const overIndex = prevTasks.findIndex(t => t.id === overId);
 
         if (prevTasks[activeIndex].columnId !== prevTasks[overIndex].columnId) {
           // Moved to a different column
@@ -147,8 +147,8 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
 
     // Moving a Task to an empty Column space
     if (isActiveTask && isOverColumn) {
-      setTasks((prevTasks) => {
-        const activeIndex = prevTasks.findIndex((t) => t.id === activeId);
+      setTasks(prevTasks => {
+        const activeIndex = prevTasks.findIndex(t => t.id === activeId);
         const updatedTasks = [...prevTasks];
         updatedTasks[activeIndex].columnId = overId as string;
         
@@ -169,27 +169,92 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
 
     if (activeId === overId) return;
 
-    // Column Reordering
     const isActiveColumn = active.data.current?.type === 'Column';
     if (isActiveColumn) {
-      setColumns((prevCols) => {
-        const activeColumnIndex = prevCols.findIndex((col) => col.id === activeId);
-        const overColumnIndex = prevCols.findIndex((col) => col.id === overId);
-        const newCols = arrayMove(prevCols, activeColumnIndex, overColumnIndex);
+      setColumns(prevCols => {
+        const activeColumnIndex = prevCols.findIndex(col => col.id === activeId);
+        const overColumnIndex = prevCols.findIndex(col => col.id === overId);
         
-        // TODO: Muation -> trigger backend API update mapping the newly sorted column positions here
-        return newCols;
+        let newCols = arrayMove(prevCols, activeColumnIndex, overColumnIndex) as ColumnDto[];
+        
+        let newIndex = 1000;
+        if (newCols.length > 1) {
+          if (overColumnIndex === 0) {
+            newIndex = newCols[1].position / 2;
+          } else if (overColumnIndex >= newCols.length - 1) {
+            newIndex = newCols[newCols.length - 2].position + 1000;
+          } else {
+            const prevPos = newCols[overColumnIndex - 1].position;
+            const nextPos = newCols[overColumnIndex + 1].position;
+            newIndex = (prevPos + nextPos) / 2;
+          }
+        }
+        
+        newCols = newCols.map(c => c.id === activeId ? { ...c, position: newIndex } : c);
+        moveColumnMutation.mutate({ id: activeId as string, newIndex });
+        return newCols.sort((a, b) => a.position - b.position);
       });
       return;
     }
 
-    // Task Reordering
     const isActiveTask = active.data.current?.type === 'Task';
-    if (isActiveTask) {
-       // Optimistic positioning is already handled by onDragOver.
-       // TODO: Mutation -> trigger backend API to persist task new columnId and sequence positioning
+if (isActiveTask) {
+      const overColumnId = over.data.current?.type === 'Column' 
+        ? over.id 
+        : over.data.current?.task?.columnId;
+        
+      if (!overColumnId) return;
+
+      setTasks(prevTasks => {
+        const activeIndex = prevTasks.findIndex(t => t.id === activeId);
+        const overIndex = prevTasks.findIndex(t => t.id === overId);
+        
+        let newTasks = [...prevTasks];
+        
+        if (active.data.current?.type === 'Task' && over.data.current?.type === 'Task') {
+          newTasks[activeIndex].columnId = overColumnId as string;
+          newTasks = arrayMove(newTasks, activeIndex, overIndex) as TaskDto[];
+        } else if (active.data.current?.type === 'Task' && over.data.current?.type === 'Column') {
+          newTasks[activeIndex].columnId = overColumnId as string;
+          newTasks = arrayMove(newTasks, activeIndex, newTasks.length - 1) as TaskDto[];
+        }
+
+        const columnTasks = newTasks.filter(t => t.columnId === overColumnId);
+        const targetActiveIndex = columnTasks.findIndex(t => t.id === activeId);
+
+        let newPos = 1000;
+        if (columnTasks.length <= 1) {
+          newPos = 1000;
+        } else if (targetActiveIndex === 0) {
+          newPos = columnTasks[1].position / 2;
+        } else if (targetActiveIndex >= columnTasks.length - 1) {
+          newPos = columnTasks[columnTasks.length - 2].position + 1000;
+        } else {
+          const prevPos = columnTasks[targetActiveIndex - 1].position;
+          const nextPos = columnTasks[targetActiveIndex + 1].position;
+          newPos = (prevPos + nextPos) / 2;
+        }
+
+        const finalTasks = newTasks.map(t => t.id === activeId ? { ...t, position: newPos } : t);
+        
+        moveTaskMutation.mutate({
+          id: activeId as string,
+          targetColumnId: overColumnId as string,
+          newIndex: newPos,
+        });
+
+        return finalTasks.sort((a, b) => a.position - b.position);
+      });
     }
   };
+
+  if (!board.columns) {
+    return (
+      <div className="flex min-h-72 items-center justify-center rounded-xl border-2 border-dashed border-indigo-300 bg-white text-sm font-semibold text-indigo-500">
+        Loading board...
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-w-0 overflow-x-auto overflow-y-hidden pb-4">
@@ -206,7 +271,7 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
               <ColumnContainer
                 key={col.id}
                 column={col}
-                tasks={tasks.filter((task) => task.columnId === col.id)}
+                tasks={tasks.filter((task) => task.columnId === col.id).sort((a, b) => a.position - b.position)}
                 onAddTask={handleAddTask}
                 onEditTask={handleEditTask}
               />
@@ -259,7 +324,7 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
           {activeColumn && (
             <ColumnContainer
               column={activeColumn}
-              tasks={tasks.filter((task) => task.columnId === activeColumn.id)}
+              tasks={tasks.filter((task) => task.columnId === activeColumn.id).sort((a, b) => a.position - b.position)}
               isOverlay
             />
           )}

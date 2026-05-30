@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createColumn, updateColumn, deleteColumn } from '../api/columnApi';
+import { createColumn, updateColumn, deleteColumn, moveColumn } from '../api/columnApi';
 import type { CreateColumnRequest, UpdateColumnRequest } from '../types';
 
 export const useCreateColumn = (boardId: string) => {
@@ -31,6 +31,17 @@ export const useDeleteColumn = (boardId: string) => {
 
   return useMutation({
     mutationFn: (id: string) => deleteColumn(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['board', boardId] });
+    },
+  });
+};
+export const useMoveColumn = (boardId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, newIndex }: { id: string; newIndex: number }) =>
+      moveColumn(id, newIndex),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['board', boardId] });
     },
