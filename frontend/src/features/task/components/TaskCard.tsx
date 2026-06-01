@@ -42,13 +42,13 @@ export default function TaskCard({ task, isOverlay, onEdit }: TaskCardProps) {
       default: return 'text-slate-600 bg-slate-50 ring-slate-500/20';
     }
   };
-    const getPriorityStyle = (priority?: string) => {
+  const getPriorityStyle = (priority?: string) => {
     switch (priority) {
       case 'High': return 'border-l-4 border-l-red-500 bg-red-50/30 dark:bg-red-950/5 border-y-slate-200 border-r-slate-200';
       case 'Medium': return 'border-l-4 border-l-amber-500 bg-amber-50/30 dark:bg-amber-950/5 border-y-slate-200 border-r-slate-200';
       case 'Low':
-default:
-  return 'border-l-4 border-l-green-500 bg-slate-50/20 dark:bg-green-950/5 border-y-slate-200 border-r-slate-200';
+      default:
+        return 'border-l-4 border-l-green-500 bg-slate-50/20 dark:bg-green-950/5 border-y-slate-200 border-r-slate-200';
     }
   };
 
@@ -66,29 +66,67 @@ default:
           {task.title}
         </h4>
       </div>
-      
+
       {task.description && (
         <p className="text-xs text-slate-600 line-clamp-2">
           {task.description}
         </p>
       )}
 
-      {(task.priority || task.dueDate) && (
-        <div className="flex items-center gap-2 mt-auto">
-          {task.priority && (
-            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold tracking-wide leading-4 ring-1 ring-inset ${getPriorityColor(task.priority)}`}>
-              {task.priority === 'High' && <Flag className="w-2.5 h-2.5 mr-1" />}
-              {task.priority}
-            </span>
-          )}
-          {task.dueDate && (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide leading-4 text-sky-700 bg-sky-50 ring-1 ring-inset ring-sky-200 gap-1">
-              <Calendar className="w-3 h-3 text-sky-500" />
-              {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            </span>
+      {(task.priority || task.dueDate || (task.assignees && task.assignees.length > 0)) && (
+        <div className="flex items-center justify-between gap-2 mt-auto w-full">
+          <div className="flex items-center gap-1.5">
+            {task.priority && (
+              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold tracking-wide leading-4 ring-1 ring-inset ${getPriorityColor(task.priority)}`}>
+                {task.priority === 'High' && <Flag className="w-2.5 h-2.5 mr-1" />}
+                {task.priority}
+              </span>
+            )}
+            {task.dueDate && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium tracking-wide leading-4 text-slate-600 bg-slate-100 ring-1 ring-inset ring-slate-500/10 gap-1">
+                <Calendar className="w-3 h-3 text-sky-500" />
+                {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </span>
+    )}
+          </div>
+
+          {task.assignees && task.assignees.length > 0 && (
+            <div className="flex -space-x-1.5 overflow-hidden">
+              {task.assignees.slice(0, 3).map((assignee) => {
+                const initials = assignee.fullName
+                  ? assignee.fullName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+                  : '?';
+                return (
+                  <div
+                    key={assignee.id}
+                    title={assignee.fullName}
+                    className="relative shrink-0 h-5 w-5 rounded-full bg-indigo-500 border border-white flex items-center justify-center text-[8px] font-bold text-white shadow-sm"
+                  >
+                    {assignee.avatarUrl ? (
+                      <img
+                        src={assignee.avatarUrl}
+                        alt={assignee.fullName}
+                        className="h-full w-full rounded-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <span>{initials}</span>
+                    )}
+                  </div>
+                );
+              })}
+              {task.assignees.length > 3 && (
+                <div
+                  title={`${task.assignees.length - 3} more assignees`}
+                  className="relative shrink-0 h-5 w-5 rounded-full bg-slate-200 border border-white flex items-center justify-center text-[7px] font-semibold text-slate-600 shadow-sm"
+                >
+                  +{task.assignees.length - 3}
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}
-    </div>
-  );
+        </div>
+      );
 }

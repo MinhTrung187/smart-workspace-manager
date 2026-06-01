@@ -1,3 +1,9 @@
+export interface TaskAssigneeDto {
+  id: string;
+  fullName: string;
+  avatarUrl?: string;
+}
+
 export interface TaskDto {
   id: string;
   columnId: string;
@@ -6,6 +12,7 @@ export interface TaskDto {
   dueDate?: string | null;
   priority?: 'Low' | 'Medium' | 'High';
   position: number;
+  assignees?: TaskAssigneeDto[];
 }
 export interface CreateTaskRequest {
   columnId: string;

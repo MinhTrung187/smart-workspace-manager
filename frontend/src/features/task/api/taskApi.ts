@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { TaskDto, CreateTaskRequest, UpdateTaskRequest } from '../types';
+import type { TaskDto, CreateTaskRequest, UpdateTaskRequest, TaskAssigneeDto } from '../types';
 
 const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL;
 
@@ -33,4 +33,17 @@ export const deleteTask = async (id: string): Promise<void> => {
 
 export const moveTask = async (id: string, targetColumnId: string, newIndex: number): Promise<void> => {
   await apiClient.patch(`/BoardTask/${id}/move`, { targetColumnId, newIndex });
+};
+
+export const getTaskAssignees = async (taskId: string): Promise<TaskAssigneeDto[]> => {
+  const response = await apiClient.get<TaskAssigneeDto[]>(`/TaskAssignee/task/${taskId}`);
+  return response.data;
+};
+
+export const assignUserToTask = async (taskId: string, userId: string): Promise<void> => {
+  await apiClient.post('/TaskAssignee/assign', { taskId, userId });
+};
+
+export const unassignUserFromTask = async (taskId: string, userId: string): Promise<void> => {
+  await apiClient.delete(`/TaskAssignee/${taskId}/assign/${userId}`);
 };

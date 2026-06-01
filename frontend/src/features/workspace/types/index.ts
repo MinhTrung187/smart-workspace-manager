@@ -14,6 +14,13 @@ export interface BoardDto {
   updatedAt: string;
   columns: ColumnDto[];
 }
+export interface WorkspaceMemberDto {
+  id: string;
+  fullName: string;
+  email?: string;
+  avatarUrl?: string;
+}
+
 
 export interface WorkspaceDetailDto {
   id: string;
@@ -23,6 +30,8 @@ export interface WorkspaceDetailDto {
   createdAt: string;
   updatedAt: string;
   boards: BoardDto[];
+  members?: WorkspaceMemberDto[];
+
 }
 
 export interface WorkspaceSummaryDto {

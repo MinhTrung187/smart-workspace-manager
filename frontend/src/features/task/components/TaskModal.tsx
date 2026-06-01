@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
-import { X, Calendar, Flag, Loader2, Trash2 } from 'lucide-react';
+import { X, Calendar, Flag, Loader2, Trash2, UserPlus, Check, ChevronDown } from 'lucide-react';
 import type { TaskDto } from '../types';
-import { useCreateTask, useUpdateTask, useDeleteTask } from '../hooks/useTaskMutations';
+import { useCreateTask, useUpdateTask, useDeleteTask, useTaskAssigneesQuery, useAssignUserMutation, useUnassignUserMutation } from '../hooks/useTaskMutations';
+import { useBoardDetailQuery } from '../../board/hooks/useBoard';
+import { useWorkspaceDetailQuery } from '../../workspace/hooks/useWorkspace';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -18,11 +20,29 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState<'Low' | 'Medium' | 'High'>('Medium');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
   const createTaskMutation = useCreateTask(boardId);
   const updateTaskMutation = useUpdateTask(boardId);
   const deleteTaskMutation = useDeleteTask(boardId);
-    const getMinDatetimeLocal = () => {
+
+  // Fetch current task assignees if editing
+  const { data: currentAssignees, isLoading: assigneesLoading } = useTaskAssigneesQuery(
+    mode === 'edit' && task ? task.id : ''
+  );
+
+  // Fetch board details to get workspaceId
+  const { data: boardData } = useBoardDetailQuery(boardId);
+  const workspaceId = boardData?.workspaceId || '';
+
+  // Fetch workspace details to get workspace members
+  const { data: workspaceData, isLoading: workspaceLoading } = useWorkspaceDetailQuery(workspaceId);
+  const availableMembers = workspaceData?.members || [];
+
+  const assignMutation = useAssignUserMutation(boardId, task?.id || '');
+  const unassignMutation = useUnassignUserMutation(boardId, task?.id || '');
+
+  const getMinDatetimeLocal = () => {
     const dateObj = new Date();
     const offset = dateObj.getTimezoneOffset() * 60000;
     return (new Date(dateObj.getTime() - offset)).toISOString().slice(0, 16);
@@ -37,14 +57,22 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
     return (new Date(dateObj.getTime() - offset)).toISOString().slice(0, 16);
   };
 
+  const handleToggleAssignee = (userId: string, isAssigned: boolean) => {
+    if (isAssigned) {
+      unassignMutation.mutate(userId);
+    } else {
+      assignMutation.mutate(userId);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
+      setIsDropdownOpen(false);
       if (mode === 'edit' && task) {
         setTitle(task.title);
         setDescription(task.description || '');
         setPriority(task.priority || 'Medium');
         setDueDate(formatToDatetimeLocal(task.dueDate));
-
       } else {
         setTitle('');
         setDescription('');
@@ -186,13 +214,147 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
                 id="task-duedate"
                 type="datetime-local"
                 min={getMinDatetimeLocal()}
-                value={dueDate} 
+                value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 disabled={isPending}
                 className="block w-full px-3 py-2 text-sm text-slate-900 bg-white border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-shadow disabled:bg-slate-50 disabled:opacity-70"
               />
             </div>
           </div>
+
+          {/* Assignees Section */}
+          {mode === 'edit' && task && (
+            <div className="border-t border-slate-100 pt-4">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 items-center gap-1.5">
+                <UserPlus className="w-3.5 h-3.5" /> Task Assignees
+              </label>
+              
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Stacked list of current assignees */}
+                <div className="flex -space-x-2 overflow-hidden">
+                  {assigneesLoading ? (
+                    <div className="h-8 w-8 rounded-full bg-slate-50 border border-white flex items-center justify-center animate-pulse">
+                      <Loader2 className="w-3.5 h-3.5 text-indigo-500 animate-spin" />
+                    </div>
+                  ) : currentAssignees && currentAssignees.length > 0 ? (
+                    currentAssignees.map((assignee) => {
+                      const initials = assignee.fullName
+                        ? assignee.fullName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+                        : '?';
+                      return (
+                        <div
+                          key={assignee.id}
+                          title={assignee.fullName}
+                          className="relative group h-8 w-8 rounded-full bg-indigo-500 border-2 border-white flex items-center justify-center text-[10px] font-bold text-white shadow-sm"
+                        >
+                          {assignee.avatarUrl ? (
+                            <img
+                              src={assignee.avatarUrl}
+                              alt={assignee.fullName}
+                              className="h-full w-full rounded-full object-cover"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <span>{initials}</span>
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <span className="text-xs text-slate-400 py-1.5 pl-1 font-medium">Unassigned</span>
+                  )}
+                </div>
+
+                {/* Dropdown triggers */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-full transition-colors focus:outline-none"
+                  >
+                    Manage Staff
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </button>
+
+                  {isDropdownOpen && (
+                    <div className="absolute left-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-lg z-20 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+                      <div className="p-2.5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                        <span className="text-xs font-bold text-slate-600 px-1">Workspace Members</span>
+                        <button
+                          type="button"
+                          onClick={() => setIsDropdownOpen(false)}
+                          className="text-[10px] text-indigo-600 hover:underline font-bold"
+                        >
+                          Done
+                        </button>
+                      </div>
+                      
+                      <div className="max-h-56 overflow-y-auto p-1 divide-y divide-slate-50">
+                        {workspaceLoading ? (
+                          <div className="flex items-center justify-center p-4">
+                            <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
+                          </div>
+                        ) : availableMembers && availableMembers.length > 0 ? (
+                          availableMembers.map((member) => {
+                            const isAssigned = currentAssignees?.some((a) => a.id === member.id) || false;
+                            const initials = member.fullName
+                              ? member.fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+                              : '?';
+                            const isMutating =
+                              (assignMutation.isPending && assignMutation.variables === member.id) ||
+                              (unassignMutation.isPending && unassignMutation.variables === member.id);
+
+                            return (
+                              <button
+                                type="button"
+                                key={member.id}
+                                onClick={() => handleToggleAssignee(member.id, isAssigned)}
+                                disabled={isMutating}
+                                className="w-full flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-slate-50 text-left transition-colors focus:outline-none group/row disabled:opacity-50"
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className="relative shrink-0 h-7 w-7 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600">
+                                    {member.avatarUrl ? (
+                                      <img
+                                        src={member.avatarUrl}
+                                        alt={member.fullName}
+                                        className="h-full w-full rounded-full object-cover"
+                                        referrerPolicy="no-referrer"
+                                      />
+                                    ) : (
+                                      <span>{initials}</span>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="text-xs font-bold text-slate-700 truncate group-hover/row:text-slate-900 leading-normal">
+                                      {member.fullName}
+                                    </span>
+                                    {member.email && (
+                                      <span className="text-[10px] text-slate-400 truncate">
+                                        {member.email}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {isMutating ? (
+                                  <Loader2 className="w-3.5 h-3.5 text-indigo-500 animate-spin" />
+                                ) : isAssigned ? (
+                                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                                ) : null}
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <div className="text-xs text-slate-400 p-4 text-center">No other members in workspace</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="pt-4 flex flex-col sm:flex-row gap-3 items-center justify-between border-t border-slate-100">
             {mode === 'edit' ? (
