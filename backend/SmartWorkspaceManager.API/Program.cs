@@ -36,6 +36,20 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(jwtOptions.Secret))
     };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+            return System.Threading.Tasks.Task.CompletedTask;
+        }
+    };
 });
 
 builder.Services.AddEndpointsApiExplorer();
@@ -97,6 +111,7 @@ builder.Services.AddScoped<IBoardService, BoardService>();
 builder.Services.AddScoped<IColumnService, ColumnService>();
 builder.Services.AddScoped<IBoardTaskService, BoardTaskService>();
 builder.Services.AddScoped<ITaskAssigneeService, TaskAssigneeService>();
+builder.Services.AddScoped<IBoardRealTimeService, BoardRealTimeService>();
 
 builder.Services.AddCors(options =>
 {

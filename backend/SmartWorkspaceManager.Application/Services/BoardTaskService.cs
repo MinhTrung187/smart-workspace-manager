@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,6 +17,7 @@ namespace SmartWorkspaceManager.Application.Services
         private readonly IGenericRepository<Workspace> _workspaceRepository;
         private readonly IUserRepository _userRepository;
         private readonly IUserContext _userContext;
+        private readonly IBoardRealTimeService _realTimeService;
 
         public BoardTaskService(
             IGenericRepository<BoardTask> taskRepository,
@@ -24,7 +25,8 @@ namespace SmartWorkspaceManager.Application.Services
             IGenericRepository<Board> boardRepository,
             IGenericRepository<Workspace> workspaceRepository,
             IUserRepository userRepository,
-            IUserContext userContext)
+            IUserContext userContext,
+            IBoardRealTimeService realTimeService)
         {
             _taskRepository = taskRepository ?? throw new ArgumentNullException(nameof(taskRepository));
             _columnRepository = columnRepository ?? throw new ArgumentNullException(nameof(columnRepository));
@@ -32,6 +34,7 @@ namespace SmartWorkspaceManager.Application.Services
             _workspaceRepository = workspaceRepository ?? throw new ArgumentNullException(nameof(workspaceRepository));
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
+            _realTimeService = realTimeService ?? throw new ArgumentNullException(nameof(realTimeService));
         }
 
         public async Task<BoardTaskResponse> CreateTaskAsync(CreateBoardTaskRequest request)
@@ -85,6 +88,8 @@ namespace SmartWorkspaceManager.Application.Services
 
             await _taskRepository.AddAsync(task);
             await _taskRepository.SaveChangesAsync();
+
+            await _realTimeService.NotifyTaskCreatedAsync(column.BoardId, task.Id);
 
             return new BoardTaskResponse(
                 task.Id,
@@ -241,6 +246,8 @@ namespace SmartWorkspaceManager.Application.Services
             _taskRepository.Update(task);
             await _taskRepository.SaveChangesAsync();
 
+            await _realTimeService.NotifyTaskUpdatedAsync(column.BoardId, task.Id);
+
             return new BoardTaskResponse(
                 task.Id,
                 task.ColumnId,
@@ -286,6 +293,8 @@ namespace SmartWorkspaceManager.Application.Services
             task.SoftDelete();
             _taskRepository.Update(task);
             await _taskRepository.SaveChangesAsync();
+
+            await _realTimeService.NotifyTaskDeletedAsync(column.BoardId, task.Id);
         }
         public async Task<BoardTaskResponse> MoveTaskAsync(Guid id, MoveTaskRequest request)
         {
@@ -372,6 +381,8 @@ namespace SmartWorkspaceManager.Application.Services
 
                 await _taskRepository.SaveChangesAsync();
 
+                await _realTimeService.NotifyTaskMovedAsync(sourceColumn.BoardId, task.Id);
+
                 var moved = tasksInColumn.First(t => t.Id == task.Id);
                 return new BoardTaskResponse(
                     moved.Id,
@@ -433,6 +444,8 @@ namespace SmartWorkspaceManager.Application.Services
             }
 
             await _taskRepository.SaveChangesAsync();
+
+            await _realTimeService.NotifyTaskMovedAsync(sourceColumn.BoardId, task.Id);
 
             var movedTask = targetTasks.First(t => t.Id == task.Id);
             return new BoardTaskResponse(
