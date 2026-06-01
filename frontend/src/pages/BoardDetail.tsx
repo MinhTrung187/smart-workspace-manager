@@ -2,10 +2,14 @@ import { Link, useParams } from 'react-router';
 import { ArrowLeft, Calendar, LayoutPanelTop, User, Filter, Share2, MoreHorizontal } from 'lucide-react';
 import KanbanBoard from '../features/board/components/KanbanBoard';
 import { useBoardDetailQuery } from '../features/board/hooks/useBoard';
+import { useBoardSignalR } from '../features/board/hooks/useBoardSignalR';
 
 export default function BoardDetail() {
   const { workspaceId, boardId } = useParams<{ workspaceId: string; boardId: string }>();
   const { data: board, isLoading, isError } = useBoardDetailQuery(boardId || '');
+
+  // Establish real-time SignalR connection for this board
+  useBoardSignalR(boardId || '');
 
   const workspacePath = workspaceId ? `/workspaces/${workspaceId}` : '/dashboard';
 
