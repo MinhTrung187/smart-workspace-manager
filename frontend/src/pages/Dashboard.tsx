@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { LayoutTemplate, LogOut, Plus } from 'lucide-react';
 import WorkspaceList from '../features/workspace/components/WorkspaceList';
 import CreateWorkspaceModal from '../features/workspace/components/CreateWorkspaceModal';
+import InvitationsList from '../features/workspace/components/InvitationsList';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -36,6 +37,7 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <InvitationsList />
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Your Workspaces</h1>

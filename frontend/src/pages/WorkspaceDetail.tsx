@@ -1,11 +1,15 @@
 import { useParams, Link } from 'react-router';
+import { useState } from 'react';
 import { useWorkspaceDetailQuery } from '../features/workspace/hooks/useWorkspace';
 import BoardGrid from '../features/board/components/BoardGrid';
-import { LayoutTemplate, ArrowLeft } from 'lucide-react';
+import { LayoutTemplate, ArrowLeft, UserPlus } from 'lucide-react';
+import InviteMemberModal from '../features/workspace/components/InviteMemberModal';
+
 
 export default function WorkspaceDetail() {
   const { id } = useParams<{ id: string }>();
   const { data: workspace, isLoading, isError } = useWorkspaceDetailQuery(id || '');
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -37,7 +41,7 @@ export default function WorkspaceDetail() {
             <div className="h-6 border-l border-slate-200"></div>
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-indigo-600 rounded-lg">
-                  <LayoutTemplate className="w-4 h-4 text-white" />
+                <LayoutTemplate className="w-4 h-4 text-white" />
               </div>
               <span className="text-sm font-semibold text-slate-500">Workspace / </span>
               <h1 className="text-lg font-bold text-slate-900 tracking-tight">{workspace.name}</h1>
@@ -48,21 +52,30 @@ export default function WorkspaceDetail() {
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
         <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm mb-8">
-           <h2 className="text-2xl font-bold text-slate-900 mb-2">{workspace.name}</h2>
-           <p className="text-slate-500 max-w-3xl leading-relaxed mb-6">
-             {workspace.description || 'No description provided for this workspace.'}
-           </p>
-           <div className="flex items-center gap-6 text-sm font-medium text-slate-500 border-t border-slate-100 pt-6">
-             <div className="flex flex-col">
-                 <span className="text-xs text-slate-400 mb-1">Owner</span>
-                 <span className="text-slate-700">{workspace.ownerName || 'Unknown Owner'}</span>
-             </div>
-             <div className="h-8 border-l border-slate-200"></div>
-             <div className="flex flex-col">
-                 <span className="text-xs text-slate-400 mb-1">Created At</span>
-                 <span className="text-slate-700">{new Date(workspace.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-             </div>
-           </div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <h2 className="text-2xl font-bold text-slate-900 leading-none">{workspace.name}</h2>
+            <button
+              onClick={() => setIsInviteModalOpen(true)}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded-lg shadow-sm transition-all self-start sm:self-auto"
+            >
+              <UserPlus className="w-4 h-4" />
+              Invite Member
+            </button>
+          </div>
+          <p className="text-slate-500 max-w-3xl leading-relaxed mb-6">
+            {workspace.description || 'No description provided for this workspace.'}
+          </p>
+          <div className="flex items-center gap-6 text-sm font-medium text-slate-500 border-t border-slate-100 pt-6">
+            <div className="flex flex-col">
+              <span className="text-xs text-slate-400 mb-1">Owner</span>
+              <span className="text-slate-700">{workspace.ownerName || 'Unknown Owner'}</span>
+            </div>
+            <div className="h-8 border-l border-slate-200"></div>
+            <div className="flex flex-col">
+              <span className="text-xs text-slate-400 mb-1">Created At</span>
+              <span className="text-slate-700">{new Date(workspace.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+            </div>
+          </div>
         </div>
 
         <div className="mb-6">
@@ -72,6 +85,12 @@ export default function WorkspaceDetail() {
 
         <BoardGrid workspaceId={workspace.id} boards={workspace.boards || []} />
       </main>
+            <InviteMemberModal
+        isOpen={isInviteModalOpen}
+        onClose={() => setIsInviteModalOpen(false)}
+        workspaceId={workspace.id}
+        workspaceName={workspace.name}
+      />
     </div>
   );
 }
