@@ -70,25 +70,30 @@ namespace SmartWorkspaceManager.Application.Services
             {
                 throw new UnauthorizedAccessException("User is not authenticated. Please provide a valid JWT token.");
             }
+
             var user = await _userRepository.GetByIdAsync(userId.Value);
             if (user == null)
             {
                 throw new KeyNotFoundException("User not found.");
             }
+
             var invitation = await _invitationRepository.GetByIdAsync(invitationId);
             if (invitation == null)
             {
                 throw new KeyNotFoundException("Invitation not found.");
             }
-            if (invitation.Email.ToLower() != user.Email.ToLower())
+
+            if (!string.Equals(invitation.Email?.Trim(), user.Email?.Trim(), StringComparison.OrdinalIgnoreCase))
             {
                 throw new UnauthorizedAccessException("This invitation is not for the current user.");
             }
+
             if (invitation.Status != InvitationStatus.Pending)
             {
                 throw new InvalidOperationException("This invitation has already been accepted or declined.");
             }
-            if (invitation.ExpiredAt < DateTime.UtcNow)
+
+            if (invitation.ExpiredAt <= DateTime.UtcNow)
             {
                 invitation.Status = InvitationStatus.Expired;
                 _invitationRepository.Update(invitation);
@@ -96,17 +101,24 @@ namespace SmartWorkspaceManager.Application.Services
 
                 throw new InvalidOperationException("This invitation has expired.");
             }
+
+            // Check existing membership
             var existingMembership = await _workspaceMemberRepository.FindAsync(
                 wm => wm.WorkspaceId == invitation.WorkspaceId && wm.UserId == userId.Value,
                 Array.Empty<string>()
             );
+
             if (existingMembership.Any())
             {
+                // If already a member, mark invitation accepted and persist (no duplicate member)
                 invitation.Status = InvitationStatus.Accepted;
                 _invitationRepository.Update(invitation);
                 await _invitationRepository.SaveChangesAsync();
+
                 throw new InvalidOperationException("You are already a member of this workspace.");
             }
+
+            // Create and persist membership, update invitation status, then save once.
             var member = new WorkspaceMember
             {
                 UserId = userId.Value,
@@ -115,17 +127,22 @@ namespace SmartWorkspaceManager.Application.Services
                 JoinedAt = DateTime.UtcNow
             };
 
+            await _workspaceMemberRepository.AddAsync(member);
+
             invitation.Status = InvitationStatus.Accepted;
             _invitationRepository.Update(invitation);
+
+            // SaveChanges on either repository will persist both changes (shared DbContext)
             await _invitationRepository.SaveChangesAsync();
+
             return new WorkspaceMemberDto(
-                    member.UserId,
-                    user.FullName ?? string.Empty,
-                    user.Email,
-                    user.AvatarUrl,
-                    member.Role.ToString(),
-                    member.JoinedAt
-                );
+                member.UserId,
+                user.FullName ?? string.Empty,
+                user.Email,
+                user.AvatarUrl,
+                member.Role.ToString(),
+                member.JoinedAt
+            );
         }
         public async Task<WorkspaceInvitationResponse> CreateInvitationAsync(Guid workspaceId, InviteUserRequest request)
         {
