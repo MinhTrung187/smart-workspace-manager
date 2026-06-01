@@ -191,10 +191,10 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
     const activeId = active.id;
     const overId = over.id;
 
-    if (activeId === overId) return;
-
     const isActiveColumn = active.data.current?.type === 'Column';
     if (isActiveColumn) {
+      if (activeId === overId) return;
+
       setColumns(prevCols => {
         const activeColumnIndex = prevCols.findIndex(col => col.id === activeId);
         const overColumnIndex = prevCols.findIndex(col => col.id === overId);
@@ -216,18 +216,12 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
 
     const isActiveTask = active.data.current?.type === 'Task';
     if (isActiveTask) {
-      const overColumnId = over.data.current?.type === 'Column'
-        ? over.id
-        : over.data.current?.task?.columnId;
+      const currentActiveTask = tasks.find(t => t.id === activeId);
+      if (!currentActiveTask) return;
 
-      if (!overColumnId) return;
+      const overColumnId = currentActiveTask.columnId;
 
       setTasks(prevTasks => {
-        const activeTask = prevTasks.find(t => t.id === activeId);
-        if (!activeTask) {
-          return prevTasks;
-        }
-
         const movedTasks = prevTasks.map(task =>
           task.id === activeId
             ? { ...task, columnId: overColumnId as string }
@@ -240,6 +234,15 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
 
         if (targetIndex <= 0) {
           return prevTasks;
+        }
+
+        // Check if task actually moved from its initial database state
+        const initialColumn = board.columns?.find(c => c.tasks?.some(t => t.id === activeId));
+        const initialTasksInColumn = [...(initialColumn?.tasks || [])].sort((a, b) => a.position - b.position);
+        const initialIndex = initialTasksInColumn.findIndex(t => t.id === activeId) + 1;
+
+        if (initialColumn?.id === overColumnId && initialIndex === targetIndex) {
+          return finalTasks;
         }
 
         moveTaskMutation.mutate({
