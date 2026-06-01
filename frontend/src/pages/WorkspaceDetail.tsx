@@ -2,15 +2,16 @@ import { useParams, Link } from 'react-router';
 import { useState } from 'react';
 import { useWorkspaceDetailQuery } from '../features/workspace/hooks/useWorkspace';
 import BoardGrid from '../features/board/components/BoardGrid';
-import { LayoutTemplate, ArrowLeft, UserPlus } from 'lucide-react';
+import { LayoutTemplate, ArrowLeft, UserPlus, Users } from 'lucide-react';
 import InviteMemberModal from '../features/workspace/components/InviteMemberModal';
+import WorkspaceMembersModal from '../features/workspace/components/WorkspaceMembersModal';
 
 
 export default function WorkspaceDetail() {
   const { id } = useParams<{ id: string }>();
   const { data: workspace, isLoading, isError } = useWorkspaceDetailQuery(id || '');
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-
+  const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 p-8 flex items-center justify-center">
@@ -70,6 +71,14 @@ export default function WorkspaceDetail() {
               <span className="text-xs text-slate-400 mb-1">Owner</span>
               <span className="text-slate-700">{workspace.ownerName || 'Unknown Owner'}</span>
             </div>
+                         <div className="h-8 border-l border-slate-200"></div>
+             <button
+               onClick={() => setIsMembersModalOpen(true)}
+               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-50 hover:bg-slate-200/60 text-slate-700 text-xs font-semibold rounded-full border border-slate-200 shadow-sm transition-all focus:outline-none cursor-pointer group hover:text-slate-950"
+             >
+               <Users className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600 transition-colors" />
+               <span>Members: <span className="text-indigo-600 font-bold">{workspace.memberCount ?? 0}</span></span>
+             </button>
             <div className="h-8 border-l border-slate-200"></div>
             <div className="flex flex-col">
               <span className="text-xs text-slate-400 mb-1">Created At</span>
@@ -90,6 +99,11 @@ export default function WorkspaceDetail() {
         onClose={() => setIsInviteModalOpen(false)}
         workspaceId={workspace.id}
         workspaceName={workspace.name}
+      />
+            <WorkspaceMembersModal
+        isOpen={isMembersModalOpen}
+        onClose={() => setIsMembersModalOpen(false)}
+        workspaceId={workspace.id}
       />
     </div>
   );

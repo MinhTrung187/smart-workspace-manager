@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { CreateWorkspaceRequest, GetAllWorkspacesResponse, WorkspaceDetailDto, WorkspaceSummaryDto } from '../types';
+import type { CreateWorkspaceRequest, GetAllWorkspacesResponse, WorkspaceDetailDto, WorkspaceMemberDto, WorkspaceSummaryDto } from '../types';
 
 const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL ;
 
@@ -35,4 +35,8 @@ export const getWorkspaceById = async (id: string): Promise<WorkspaceDetailDto> 
 export const initializeWorkspace = async (data: CreateWorkspaceRequest): Promise<WorkspaceDetailDto> => {
     const response = await apiClient.post<WorkspaceDetailDto>('/Workspace/initialize', data);
     return response.data;
+};
+export const getWorkspaceMembers = async (workspaceId: string): Promise<WorkspaceMemberDto[]> => {
+  const response = await apiClient.get<WorkspaceMemberDto[]>(`/workspaces/${workspaceId}/members`);
+  return response.data;
 };

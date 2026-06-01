@@ -21,7 +21,7 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState<'Low' | 'Medium' | 'High'>('Medium');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  
+
   const createTaskMutation = useCreateTask(boardId);
   const updateTaskMutation = useUpdateTask(boardId);
   const deleteTaskMutation = useDeleteTask(boardId);
@@ -52,7 +52,7 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
     if (!isoString) return '';
     const dateObj = new Date(isoString);
     if (isNaN(dateObj.getTime())) return '';
-    
+
     const offset = dateObj.getTimezoneOffset() * 60000;
     return (new Date(dateObj.getTime() - offset)).toISOString().slice(0, 16);
   };
@@ -205,7 +205,7 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
                 <option value="High">High</option>
               </select>
             </div>
-            
+
             <div>
               <label htmlFor="task-duedate" className="block text-sm font-semibold text-slate-700 mb-1.5 items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-slate-400" /> Due Date
@@ -228,7 +228,7 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 items-center gap-1.5">
                 <UserPlus className="w-3.5 h-3.5" /> Task Assignees
               </label>
-              
+
               <div className="flex flex-wrap items-center gap-3">
                 {/* Stacked list of current assignees */}
                 <div className="flex -space-x-2 overflow-hidden">
@@ -288,7 +288,7 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
                           Done
                         </button>
                       </div>
-                      
+
                       <div className="max-h-56 overflow-y-auto p-1 divide-y divide-slate-50">
                         {workspaceLoading ? (
                           <div className="flex items-center justify-center p-4">
@@ -308,7 +308,11 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
                               <button
                                 type="button"
                                 key={member.id}
-                                onClick={() => handleToggleAssignee(member.id, isAssigned)}
+                                onClick={() => {
+                                  if (member.id) {
+                                    handleToggleAssignee(member.id, isAssigned);
+                                  }
+                                }}
                                 disabled={isMutating}
                                 className="w-full flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-slate-50 text-left transition-colors focus:outline-none group/row disabled:opacity-50"
                               >
@@ -336,7 +340,7 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
                                     )}
                                   </div>
                                 </div>
-                                
+
                                 {isMutating ? (
                                   <Loader2 className="w-3.5 h-3.5 text-indigo-500 animate-spin" />
                                 ) : isAssigned ? (
@@ -368,7 +372,7 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
                 Delete Task
               </button>
             ) : <div />}
-            
+
             <div className="flex gap-3 w-full sm:w-auto">
               <button
                 type="button"

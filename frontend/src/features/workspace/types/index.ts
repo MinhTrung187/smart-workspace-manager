@@ -15,10 +15,13 @@ export interface BoardDto {
   columns: ColumnDto[];
 }
 export interface WorkspaceMemberDto {
-  id: string;
+  userId: string;
   fullName: string;
-  email?: string;
-  avatarUrl?: string;
+  email: string;
+  avatarUrl: string | null;
+  role: string;
+  joinedAt: string;
+  id?: string; 
 }
 
 
@@ -31,7 +34,7 @@ export interface WorkspaceDetailDto {
   updatedAt: string;
   boards: BoardDto[];
   members?: WorkspaceMemberDto[];
-
+  memberCount?: number;
 }
 
 export interface WorkspaceSummaryDto {

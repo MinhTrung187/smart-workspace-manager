@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
-import { getAllWorkspaces, getWorkspaceById, initializeWorkspace } from '../api/workspaceApi';
+import { getAllWorkspaces, getWorkspaceById, getWorkspaceMembers, initializeWorkspace } from '../api/workspaceApi';
 import type { CreateWorkspaceRequest } from '../types';
 
 export const useWorkspacesQuery = () => {
@@ -17,7 +17,6 @@ export const useWorkspaceDetailQuery = (id: string) => {
     enabled: !!id,
   });
 };
-
 export const useInitializeWorkspaceMutation = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -28,5 +27,13 @@ export const useInitializeWorkspaceMutation = () => {
       queryClient.invalidateQueries({ queryKey: ['workspaces'] });
       navigate(`/workspaces/${data.id}`);
     },
+  });
+};
+
+export const useWorkspaceMembersQuery = (workspaceId: string) => {
+  return useQuery({
+    queryKey: ['workspaceMembers', workspaceId],
+    queryFn: () => getWorkspaceMembers(workspaceId),
+    enabled: !!workspaceId,
   });
 };
