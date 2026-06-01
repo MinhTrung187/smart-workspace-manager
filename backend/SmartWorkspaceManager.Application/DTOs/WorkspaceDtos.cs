@@ -90,6 +90,7 @@ namespace SmartWorkspaceManager.Application.DTOs
         string OwnerName,
         DateTime CreatedAt,
         DateTime? UpdatedAt,
+        int MemberCount,
         List<BoardDto> Boards
     );
 

@@ -254,6 +254,8 @@ namespace SmartWorkspaceManager.Application.Services
                 ));
             }
 
+            var memberCount = workspace.Members?.Count ?? 0;
+
             return new WorkspaceDetailResponse(
                 workspace.Id,
                 workspace.Name,
@@ -261,6 +263,7 @@ namespace SmartWorkspaceManager.Application.Services
                 ownerName,
                 workspace.CreatedAt,
                 workspace.UpdatedAt,
+                memberCount,
                 boardDtos
             );
         }
