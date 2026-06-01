@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { X, Calendar, Flag, Loader2, Trash2, UserPlus, Check, ChevronDown } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { TaskDto } from '../types';
 import { useCreateTask, useUpdateTask, useDeleteTask, useTaskAssigneesQuery, useAssignUserMutation, useUnassignUserMutation } from '../hooks/useTaskMutations';
 import { useBoardDetailQuery } from '../../board/hooks/useBoard';
-import { useWorkspaceDetailQuery } from '../../workspace/hooks/useWorkspace';
+import { useWorkspaceMembersQuery } from '../../workspace/hooks/useWorkspace';
+import { assignUserToTask } from '../api/taskApi';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -16,11 +18,17 @@ interface TaskModalProps {
 }
 
 export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, task }: TaskModalProps) {
+  const queryClient = useQueryClient();
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState<'Low' | 'Medium' | 'High'>('Medium');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSubmittingTask, setIsSubmittingTask] = useState(false);
+
+  // Create mode selected assignees state
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
   const createTaskMutation = useCreateTask(boardId);
   const updateTaskMutation = useUpdateTask(boardId);
@@ -35,9 +43,8 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
   const { data: boardData } = useBoardDetailQuery(boardId);
   const workspaceId = boardData?.workspaceId || '';
 
-  // Fetch workspace details to get workspace members
-  const { data: workspaceData, isLoading: workspaceLoading } = useWorkspaceDetailQuery(workspaceId);
-  const availableMembers = workspaceData?.members || [];
+  // Fetch workspace members using workspace members list API
+  const { data: availableMembers, isLoading: workspaceMembersLoading } = useWorkspaceMembersQuery(workspaceId);
 
   const assignMutation = useAssignUserMutation(boardId, task?.id || '');
   const unassignMutation = useUnassignUserMutation(boardId, task?.id || '');
@@ -65,9 +72,17 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
     }
   };
 
+  const handleToggleAssigneeCreate = (userId: string) => {
+    setSelectedUserIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
+  };
+
   useEffect(() => {
     if (isOpen) {
       setIsDropdownOpen(false);
+      setSelectedUserIds([]);
+      setIsSubmittingTask(false);
       if (mode === 'edit' && task) {
         setTitle(task.title);
         setDescription(task.description || '');
@@ -84,7 +99,7 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || isSubmittingTask) return;
 
     let isoDueDate: string | null = null;
     if (dueDate) {
@@ -92,6 +107,7 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
     }
 
     if (mode === 'create') {
+      setIsSubmittingTask(true);
       createTaskMutation.mutate(
         {
           columnId,
@@ -101,7 +117,26 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
           priority,
         },
         {
-          onSuccess: () => onClose(),
+          onSuccess: async (createdTask) => {
+            try {
+              // Sequentially perform assignUserToTask calls for any selected user IDs in creation mode
+              if (selectedUserIds.length > 0) {
+                for (const userId of selectedUserIds) {
+                  await assignUserToTask(createdTask.id, userId);
+                }
+              }
+            } catch (err) {
+              console.error('Error assigning users while creating task:', err);
+            } finally {
+              setIsSubmittingTask(false);
+              // Refreshes the board data (columns, tasks, assignees)
+              queryClient.invalidateQueries({ queryKey: ['board', boardId] });
+              onClose();
+            }
+          },
+          onError: () => {
+            setIsSubmittingTask(false);
+          },
         }
       );
     } else if (mode === 'edit' && task) {
@@ -134,14 +169,14 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
     }
   };
 
-  const isPending = createTaskMutation.isPending || updateTaskMutation.isPending || deleteTaskMutation.isPending;
+  const isPending = createTaskMutation.isPending || updateTaskMutation.isPending || deleteTaskMutation.isPending || isSubmittingTask;
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200">
-        <div className="flex justify-between items-center p-5 border-b border-slate-100 bg-slate-50/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-visible my-8 animate-in zoom-in-95 duration-200 border border-slate-200">
+        <div className="flex justify-between items-center p-5 border-b border-slate-100 bg-slate-50/50 rounded-t-2xl">
           <h2 className="text-lg font-bold text-slate-800">
             {mode === 'create' ? 'Create Task' : 'Edit Task'}
           </h2>
@@ -223,17 +258,17 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
           </div>
 
           {/* Assignees Section */}
-          {mode === 'edit' && task && (
-            <div className="border-t border-slate-100 pt-4">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 items-center gap-1.5">
-                <UserPlus className="w-3.5 h-3.5" /> Task Assignees
-              </label>
+          <div className="border-t border-slate-100 pt-4">
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
+              <UserPlus className="w-3.5 h-3.5" /> Task Assignees
+            </label>
 
-              <div className="flex flex-wrap items-center gap-3">
-                {/* Stacked list of current assignees */}
-                <div className="flex -space-x-2 overflow-hidden">
-                  {assigneesLoading ? (
-                    <div className="h-8 w-8 rounded-full bg-slate-50 border border-white flex items-center justify-center animate-pulse">
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Stacked list of current assignees */}
+              <div className="flex -space-x-2 overflow-hidden">
+                {mode === 'edit' ? (
+                  assigneesLoading ? (
+                    <div key="loading" className="h-8 w-8 rounded-full bg-slate-50 border border-white flex items-center justify-center animate-pulse">
                       <Loader2 className="w-3.5 h-3.5 text-indigo-500 animate-spin" />
                     </div>
                   ) : currentAssignees && currentAssignees.length > 0 ? (
@@ -262,103 +297,141 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
                     })
                   ) : (
                     <span className="text-xs text-slate-400 py-1.5 pl-1 font-medium">Unassigned</span>
-                  )}
-                </div>
-
-                {/* Dropdown triggers */}
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-full transition-colors focus:outline-none"
-                  >
-                    Manage Staff
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  </button>
-
-                  {isDropdownOpen && (
-                    <div className="absolute left-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-lg z-20 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
-                      <div className="p-2.5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                        <span className="text-xs font-bold text-slate-600 px-1">Workspace Members</span>
-                        <button
-                          type="button"
-                          onClick={() => setIsDropdownOpen(false)}
-                          className="text-[10px] text-indigo-600 hover:underline font-bold"
-                        >
-                          Done
-                        </button>
-                      </div>
-
-                      <div className="max-h-56 overflow-y-auto p-1 divide-y divide-slate-50">
-                        {workspaceLoading ? (
-                          <div className="flex items-center justify-center p-4">
-                            <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
+                  )
+                ) : (
+                  // Create Mode UI Representations of Selected Members
+                  selectedUserIds.length > 0 ? (
+                    availableMembers
+                      ?.filter((member) => selectedUserIds.includes(member.userId))
+                      ?.map((member) => {
+                        const initials = member.fullName
+                          ? member.fullName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+                          : '?';
+                        return (
+                          <div
+                            key={member.userId}
+                            title={member.fullName}
+                            className="relative group h-8 w-8 rounded-full bg-indigo-500 border-2 border-white flex items-center justify-center text-[10px] font-bold text-white shadow-sm"
+                          >
+                            {member.avatarUrl ? (
+                              <img
+                                src={member.avatarUrl}
+                                alt={member.fullName}
+                                className="h-full w-full rounded-full object-cover"
+                                referrerPolicy="no-referrer"
+                              />
+                            ) : (
+                              <span>{initials}</span>
+                            )}
                           </div>
-                        ) : availableMembers && availableMembers.length > 0 ? (
-                          availableMembers.map((member) => {
-                            const isAssigned = currentAssignees?.some((a) => a.id === member.id) || false;
-                            const initials = member.fullName
-                              ? member.fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
-                              : '?';
-                            const isMutating =
-                              (assignMutation.isPending && assignMutation.variables === member.id) ||
-                              (unassignMutation.isPending && unassignMutation.variables === member.id);
+                        );
+                      })
+                  ) : (
+                    <span className="text-xs text-slate-400 py-1.5 pl-1 font-medium">Unassigned</span>
+                  )
+                )}
+              </div>
 
-                            return (
-                              <button
-                                type="button"
-                                key={member.id}
-                                onClick={() => {
-                                  if (member.id) {
-                                    handleToggleAssignee(member.id, isAssigned);
-                                  }
-                                }}
-                                disabled={isMutating}
-                                className="w-full flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-slate-50 text-left transition-colors focus:outline-none group/row disabled:opacity-50"
-                              >
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                  <div className="relative shrink-0 h-7 w-7 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600">
-                                    {member.avatarUrl ? (
-                                      <img
-                                        src={member.avatarUrl}
-                                        alt={member.fullName}
-                                        className="h-full w-full rounded-full object-cover"
-                                        referrerPolicy="no-referrer"
-                                      />
-                                    ) : (
-                                      <span>{initials}</span>
-                                    )}
-                                  </div>
-                                  <div className="flex flex-col min-w-0">
-                                    <span className="text-xs font-bold text-slate-700 truncate group-hover/row:text-slate-900 leading-normal">
-                                      {member.fullName}
-                                    </span>
-                                    {member.email && (
-                                      <span className="text-[10px] text-slate-400 truncate">
-                                        {member.email}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
+              {/* Dropdown triggers */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-full transition-colors focus:outline-none"
+                >
+                  Manage Staff
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
 
-                                {isMutating ? (
-                                  <Loader2 className="w-3.5 h-3.5 text-indigo-500 animate-spin" />
-                                ) : isAssigned ? (
-                                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                                ) : null}
-                              </button>
-                            );
-                          })
-                        ) : (
-                          <div className="text-xs text-slate-400 p-4 text-center">No other members in workspace</div>
-                        )}
-                      </div>
+                {isDropdownOpen && (
+                  <div className="absolute left-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-lg z-30 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="p-2.5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                      <span className="text-xs font-bold text-slate-600 px-1">Workspace Members</span>
+                      <button
+                        type="button"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="text-[10px] text-indigo-600 hover:underline font-bold"
+                      >
+                        Done
+                      </button>
                     </div>
-                  )}
-                </div>
+
+                    <div className="max-h-96 overflow-y-auto p-1 divide-y divide-slate-50">
+                      {workspaceMembersLoading ? (
+                        <div className="flex items-center justify-center p-4">
+                          <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
+                        </div>
+                      ) : availableMembers && availableMembers.length > 0 ? (
+                        availableMembers.map((member, index) => {
+                          const isAssigned = mode === 'edit'
+                            ? (currentAssignees?.some((a) => (a.userId || a.id) === member.userId) || false)
+                            : selectedUserIds.includes(member.userId);
+
+                          const initials = member.fullName
+                            ? member.fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+                            : '?';
+
+                          const isMutating = mode === 'edit' && (
+                            (assignMutation.isPending && assignMutation.variables === member.userId) ||
+                            (unassignMutation.isPending && unassignMutation.variables === member.userId)
+                          );
+
+                          return (
+                            <button
+                              type="button"
+                              key={member.id || member.userId || index}
+                              onClick={() => {
+                                if (mode === 'edit') {
+                                  handleToggleAssignee(member.userId, isAssigned);
+                                } else {
+                                  handleToggleAssigneeCreate(member.userId);
+                                }
+                              }}
+                              disabled={isMutating}
+                              className="w-full flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-slate-50 text-left transition-colors focus:outline-none group/row disabled:opacity-50"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="relative shrink-0 h-7 w-7 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600">
+                                  {member.avatarUrl ? (
+                                    <img
+                                      src={member.avatarUrl}
+                                      alt={member.fullName}
+                                      className="h-full w-full rounded-full object-cover"
+                                      referrerPolicy="no-referrer"
+                                    />
+                                  ) : (
+                                    <span>{initials}</span>
+                                  )}
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                  <span className="text-xs font-bold text-slate-700 truncate group-hover/row:text-slate-900 leading-normal">
+                                    {member.fullName}
+                                  </span>
+                                  {member.email && (
+                                    <span className="text-[10px] text-slate-400 truncate">
+                                      {member.email}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {isMutating ? (
+                                <Loader2 className="w-3.5 h-3.5 text-indigo-500 animate-spin" />
+                              ) : isAssigned ? (
+                                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                              ) : null}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="text-xs text-slate-400 p-4 text-center">No other members in workspace</div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          )}
+          </div>
 
           <div className="pt-4 flex flex-col sm:flex-row gap-3 items-center justify-between border-t border-slate-100">
             {mode === 'edit' ? (

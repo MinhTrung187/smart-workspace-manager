@@ -36,8 +36,13 @@ export const moveTask = async (id: string, targetColumnId: string, newIndex: num
 };
 
 export const getTaskAssignees = async (taskId: string): Promise<TaskAssigneeDto[]> => {
-  const response = await apiClient.get<TaskAssigneeDto[]>(`/TaskAssignee/task/${taskId}`);
-  return response.data;
+  const response = await apiClient.get<any[]>(`/TaskAssignee/task/${taskId}`);
+  return response.data.map((item) => ({
+    id: item.userId || item.id,
+    userId: item.userId,
+    fullName: item.fullName,
+    avatarUrl: item.avatarUrl,
+  }));
 };
 
 export const assignUserToTask = async (taskId: string, userId: string): Promise<void> => {
