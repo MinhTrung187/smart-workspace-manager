@@ -1,7 +1,7 @@
-using SmartWorkspaceManager.Application.Common;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using SmartWorkspaceManager.Domain.Enums;
 
 namespace SmartWorkspaceManager.Application.DTOs
 {
@@ -83,6 +83,13 @@ namespace SmartWorkspaceManager.Application.DTOs
         List<ColumnBasicDto> Columns
     );
 
+    public sealed record ChatChannelDto(
+        Guid Id,
+        string Name,
+        ChannelType Type,
+        Guid? TaskId
+    );
+
     public sealed record WorkspaceDetailResponse(
         Guid Id,
         string Name,
@@ -91,6 +98,7 @@ namespace SmartWorkspaceManager.Application.DTOs
         DateTime CreatedAt,
         DateTime? UpdatedAt,
         int MemberCount,
+        List<ChatChannelDto> ChatChannels,
         List<BoardDto> Boards
     );
 

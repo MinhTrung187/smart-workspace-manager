@@ -281,6 +281,11 @@ namespace SmartWorkspaceManager.Application.Services
 
             var memberCount = workspace.Members?.Count ?? 0;
 
+            var channels = (await _chatChannelRepository.FindAsync(c => c.WorkspaceId == workspace.Id, System.Array.Empty<string>()))
+                .OrderBy(c => c.CreatedAt)
+                .Select(c => new ChatChannelDto(c.Id, c.Name, c.Type, c.TaskId))
+                .ToList();
+
             return new WorkspaceDetailResponse(
                 workspace.Id,
                 workspace.Name,
@@ -289,9 +294,9 @@ namespace SmartWorkspaceManager.Application.Services
                 workspace.CreatedAt,
                 workspace.UpdatedAt,
                 memberCount,
+                channels,
                 boardDtos
             );
         }
-
     }
 }
