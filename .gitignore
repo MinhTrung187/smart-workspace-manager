@@ -9,7 +9,7 @@
 *.sln.docstates
 *.userprefs
 mono_crash.*
-
+appsettings.Development.json
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
