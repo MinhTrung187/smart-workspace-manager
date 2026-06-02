@@ -18,6 +18,7 @@ namespace SmartWorkspaceManager.Application.Services
         private readonly IGenericRepository<Board> _boardRepository;
         private readonly IGenericRepository<Column> _columnRepository;
         private readonly IGenericRepository<BoardTask> _taskRepository;
+        private readonly IGenericRepository<ChatChannel> _chatChannelRepository;
         private readonly IUserRepository _userRepository;
         private readonly IUserContext _userContext;
 
@@ -28,6 +29,7 @@ namespace SmartWorkspaceManager.Application.Services
             IGenericRepository<Board> boardRepository,
             IGenericRepository<Column> columnRepository,
             IGenericRepository<BoardTask> taskRepository,
+            IGenericRepository<ChatChannel> chatChannelRepository,
             IUserRepository userRepository,
             IUserContext userContext)
         {
@@ -38,6 +40,7 @@ namespace SmartWorkspaceManager.Application.Services
             _boardRepository = boardRepository ?? throw new ArgumentNullException(nameof(boardRepository));
             _columnRepository = columnRepository ?? throw new ArgumentNullException(nameof(columnRepository));
             _taskRepository = taskRepository ?? throw new ArgumentNullException(nameof(taskRepository));
+            _chatChannelRepository = chatChannelRepository ?? throw new ArgumentNullException(nameof(chatChannelRepository));
             _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
         }
 
@@ -89,6 +92,17 @@ namespace SmartWorkspaceManager.Application.Services
 
             await _workspaceRepository.AddAsync(workspace);
             await _workspaceRepository.SaveChangesAsync();
+
+            // Create default chat channel for the workspace
+            var channel = new ChatChannel
+            {
+                Name = "General",
+                Type = ChannelType.Workspace,
+                WorkspaceId = workspace.Id
+            };
+
+            await _chatChannelRepository.AddAsync(channel);
+            await _chatChannelRepository.SaveChangesAsync();
 
             return new WorkspaceResponse(
                 workspace.Id,
@@ -166,6 +180,17 @@ namespace SmartWorkspaceManager.Application.Services
             }
 
             await _columnRepository.SaveChangesAsync();
+
+            // Create default chat channel for the workspace
+            var defaultChannel = new ChatChannel
+            {
+                Name = "General",
+                Type = ChannelType.Workspace,
+                WorkspaceId = workspace.Id
+            };
+
+            await _chatChannelRepository.AddAsync(defaultChannel);
+            await _chatChannelRepository.SaveChangesAsync();
 
             return new WorkspaceResponse(
                 workspace.Id,
