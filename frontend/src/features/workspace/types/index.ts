@@ -21,9 +21,14 @@ export interface WorkspaceMemberDto {
   avatarUrl: string | null;
   role: string;
   joinedAt: string;
-  id?: string; 
+  id?: string;
 }
-
+export interface ChatChannelDto {
+  id: string;
+  name: string;
+  type: number;
+  taskId: string | null;
+}
 
 export interface WorkspaceDetailDto {
   id: string;
@@ -35,6 +40,8 @@ export interface WorkspaceDetailDto {
   boards: BoardDto[];
   members?: WorkspaceMemberDto[];
   memberCount?: number;
+  chatChannels?: ChatChannelDto[];
+
 }
 
 export interface WorkspaceSummaryDto {

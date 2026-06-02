@@ -5,6 +5,7 @@ import BoardGrid from '../features/board/components/BoardGrid';
 import { LayoutTemplate, ArrowLeft, UserPlus, Users } from 'lucide-react';
 import InviteMemberModal from '../features/workspace/components/InviteMemberModal';
 import WorkspaceMembersModal from '../features/workspace/components/WorkspaceMembersModal';
+import WorkspaceChatPanel from '../features/chat/components/WorkspaceChatPanel';
 
 
 export default function WorkspaceDetail() {
@@ -71,14 +72,14 @@ export default function WorkspaceDetail() {
               <span className="text-xs text-slate-400 mb-1">Owner</span>
               <span className="text-slate-700">{workspace.ownerName || 'Unknown Owner'}</span>
             </div>
-                         <div className="h-8 border-l border-slate-200"></div>
-             <button
-               onClick={() => setIsMembersModalOpen(true)}
-               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-50 hover:bg-slate-200/60 text-slate-700 text-xs font-semibold rounded-full border border-slate-200 shadow-sm transition-all focus:outline-none cursor-pointer group hover:text-slate-950"
-             >
-               <Users className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600 transition-colors" />
-               <span>Members: <span className="text-indigo-600 font-bold">{workspace.memberCount ?? 0}</span></span>
-             </button>
+            <div className="h-8 border-l border-slate-200"></div>
+            <button
+              onClick={() => setIsMembersModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-50 hover:bg-slate-200/60 text-slate-700 text-xs font-semibold rounded-full border border-slate-200 shadow-sm transition-all focus:outline-none cursor-pointer group hover:text-slate-950"
+            >
+              <Users className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600 transition-colors" />
+              <span>Members: <span className="text-indigo-600 font-bold">{workspace.memberCount ?? 0}</span></span>
+            </button>
             <div className="h-8 border-l border-slate-200"></div>
             <div className="flex flex-col">
               <span className="text-xs text-slate-400 mb-1">Created At</span>
@@ -94,17 +95,23 @@ export default function WorkspaceDetail() {
 
         <BoardGrid workspaceId={workspace.id} boards={workspace.boards || []} />
       </main>
-            <InviteMemberModal
+      <InviteMemberModal
         isOpen={isInviteModalOpen}
         onClose={() => setIsInviteModalOpen(false)}
         workspaceId={workspace.id}
         workspaceName={workspace.name}
       />
-            <WorkspaceMembersModal
+      <WorkspaceMembersModal
         isOpen={isMembersModalOpen}
         onClose={() => setIsMembersModalOpen(false)}
         workspaceId={workspace.id}
       />
+      {workspace.chatChannels && workspace.chatChannels.length > 0 ? (
+        <WorkspaceChatPanel
+          channelId={workspace.chatChannels.find(c => c.type === 1)?.id || workspace.chatChannels[0].id}
+          workspaceName={workspace.name}
+        />
+      ) : null}
     </div>
   );
 }
