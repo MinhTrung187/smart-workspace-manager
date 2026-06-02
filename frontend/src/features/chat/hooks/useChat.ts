@@ -6,8 +6,6 @@ export const useChannelMessagesQuery = (channelId: string) => {
     queryKey: ['chatMessages', channelId],
     queryFn: () => getChannelMessages(channelId),
     enabled: !!channelId,
-    refetchInterval: 3000, 
-    refetchIntervalInBackground: true,
   });
 };
 

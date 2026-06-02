@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { MessageSquare, X, Send, Loader2, MessageCircle } from 'lucide-react';
 import { useChannelMessagesQuery, useSendMessageMutation } from '../hooks/useChat';
+import { useChatSignalR } from '../hooks/useChatSignalR';
 
 interface WorkspaceChatPanelProps {
   channelId: string;
@@ -19,6 +20,9 @@ export default function WorkspaceChatPanel({ channelId, workspaceName }: Workspa
 
   const { data: messages, isLoading, isError, refetch } = useChannelMessagesQuery(channelId);
   const sendMessageMutation = useSendMessageMutation(channelId);
+
+  // Initialize Real-time SignalR chat connection
+  useChatSignalR(channelId);
 
   const scrollToBottom = (behavior: 'smooth' | 'auto' = 'smooth') => {
     if (messagesEndRef.current) {
