@@ -28,6 +28,3 @@ This project is structured as a **Monorepo** containing both the Frontend and Ba
 ### Frontend (`/frontend`)
 * **Library:** React 19 (Vite)
 * **Styling:** Tailwind CSS
-
-   ```bash
-   cd backend
