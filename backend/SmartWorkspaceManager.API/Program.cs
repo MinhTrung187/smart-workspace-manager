@@ -113,6 +113,7 @@ builder.Services.AddScoped<IBoardTaskService, BoardTaskService>();
 builder.Services.AddScoped<ITaskAssigneeService, TaskAssigneeService>();
 builder.Services.AddScoped<IWorkspaceMemberService, WorkspaceMemberService>();
 builder.Services.AddScoped<IBoardRealTimeService, BoardRealTimeService>();
+builder.Services.AddScoped<IChatService, ChatService>();
 
 builder.Services.AddCors(options =>
 {
