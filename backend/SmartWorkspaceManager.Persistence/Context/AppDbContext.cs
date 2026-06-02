@@ -16,6 +16,8 @@ namespace SmartWorkspaceManager.Persistence.Context
         public DbSet<Column> Columns => Set<Column>();
         public DbSet<BoardTask> BoardTasks => Set<BoardTask>();
         public DbSet<TaskAssignee> TaskAssignees => Set<TaskAssignee>();
+        public DbSet<ChatChannel> ChatChannels => Set<ChatChannel>();
+        public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
