@@ -1,0 +1,11 @@
+using System;
+using System.Threading.Tasks;
+using SmartWorkspaceManager.Application.DTOs;
+
+namespace SmartWorkspaceManager.Application.Interfaces
+{
+    public interface IChatRealTimeService
+    {
+        Task NotifyMessageSentAsync(Guid channelId, ChatMessageResponse message);
+    }
+}

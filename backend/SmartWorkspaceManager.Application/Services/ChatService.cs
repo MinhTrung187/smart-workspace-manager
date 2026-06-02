@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,6 +16,7 @@ namespace SmartWorkspaceManager.Application.Services
         private readonly IGenericRepository<WorkspaceMember> _workspaceMemberRepository;
         private readonly IUserRepository _userRepository;
         private readonly IUserContext _userContext;
+        private readonly IChatRealTimeService _chatRealTimeService;
 
         public ChatService(
             IGenericRepository<ChatChannel> channelRepository,
@@ -23,7 +24,8 @@ namespace SmartWorkspaceManager.Application.Services
             IGenericRepository<Workspace> workspaceRepository,
             IGenericRepository<WorkspaceMember> workspaceMemberRepository,
             IUserRepository userRepository,
-            IUserContext userContext)
+            IUserContext userContext,
+            IChatRealTimeService chatRealTimeService)
         {
             _channelRepository = channelRepository ?? throw new ArgumentNullException(nameof(channelRepository));
             _messageRepository = messageRepository ?? throw new ArgumentNullException(nameof(messageRepository));
@@ -31,6 +33,7 @@ namespace SmartWorkspaceManager.Application.Services
             _workspaceMemberRepository = workspaceMemberRepository ?? throw new ArgumentNullException(nameof(workspaceMemberRepository));
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
+            _chatRealTimeService = chatRealTimeService ?? throw new ArgumentNullException(nameof(chatRealTimeService));
         }
 
         public async Task<List<ChatMessageResponse>> GetMessagesAsync(Guid channelId)
@@ -104,7 +107,7 @@ namespace SmartWorkspaceManager.Application.Services
             await _messageRepository.AddAsync(message);
             await _messageRepository.SaveChangesAsync();
 
-            return new ChatMessageResponse(
+            var response = new ChatMessageResponse(
                 message.Id,
                 message.ChannelId,
                 message.UserId,
@@ -114,6 +117,10 @@ namespace SmartWorkspaceManager.Application.Services
                 message.EditedAt,
                 true
             );
+
+            await _chatRealTimeService.NotifyMessageSentAsync(channelId, response);
+
+            return response;
         }
     }
 }
