@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { createTask, updateTask, deleteTask, moveTask, getTaskAssignees, assignUserToTask, unassignUserFromTask } from '../api/taskApi';
+import { createTask, updateTask, deleteTask, moveTask, getTaskAssignees, assignUserToTask, unassignUserFromTask, deleteTaskAttachment, uploadTaskAttachment, getTaskAttachments } from '../api/taskApi';
 import type { CreateTaskRequest, UpdateTaskRequest } from '../types';
 
 export const useCreateTask = (boardId: string) => {
@@ -74,6 +74,37 @@ export const useUnassignUserMutation = (boardId: string, taskId: string) => {
     mutationFn: (userId: string) => unassignUserFromTask(taskId, userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['taskAssignees', taskId] });
+      queryClient.invalidateQueries({ queryKey: ['board', boardId] });
+    },
+  });
+};
+export const useTaskAttachmentsQuery = (taskId: string) => {
+  return useQuery({
+    queryKey: ['taskAttachments', taskId],
+    queryFn: () => getTaskAttachments(taskId),
+    enabled: !!taskId,
+  });
+};
+
+export const useUploadAttachmentMutation = (boardId: string, taskId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (file: File) => uploadTaskAttachment(taskId, file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['taskAttachments', taskId] });
+      queryClient.invalidateQueries({ queryKey: ['board', boardId] });
+    },
+  });
+};
+
+export const useDeleteAttachmentMutation = (boardId: string, taskId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => deleteTaskAttachment(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['taskAttachments', taskId] });
       queryClient.invalidateQueries({ queryKey: ['board', boardId] });
     },
   });

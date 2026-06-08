@@ -5,6 +5,7 @@ using SmartWorkspaceManager.API.Hubs;
 using SmartWorkspaceManager.API.Services;
 using SmartWorkspaceManager.Application.Interfaces;
 using SmartWorkspaceManager.Application.Services;
+using SmartWorkspaceManager.Infrastructure.Storage;
 using SmartWorkspaceManager.Persistence.Context;
 using SmartWorkspaceManager.Persistence.Repositories;
 using System.Text;
@@ -17,6 +18,8 @@ builder.Services.AddHttpContextAccessor();
 
 var jwtOptions = new JwtOptions();
 builder.Configuration.GetSection("Jwt").Bind(jwtOptions);
+builder.Services.Configure<SupabaseStorageOptions>(
+    builder.Configuration.GetSection("SupabaseStorage"));
 
 builder.Services.AddAuthentication(options =>
 {
@@ -115,6 +118,8 @@ builder.Services.AddScoped<IWorkspaceMemberService, WorkspaceMemberService>();
 builder.Services.AddScoped<IBoardRealTimeService, BoardRealTimeService>();
 builder.Services.AddScoped<IChatRealTimeService, ChatRealTimeService>();
 builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<ITaskAttachmentService, TaskAttachmentService>();
+builder.Services.AddHttpClient<IFileStorageService,SupabaseFileStorageService>();
 
 builder.Services.AddCors(options =>
 {

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { TaskDto, CreateTaskRequest, UpdateTaskRequest, TaskAssigneeDto } from '../types';
+import type { TaskDto, CreateTaskRequest, UpdateTaskRequest, TaskAssigneeDto, TaskAttachmentDto } from '../types';
 
 const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL;
 
@@ -51,4 +51,23 @@ export const assignUserToTask = async (taskId: string, userId: string): Promise<
 
 export const unassignUserFromTask = async (taskId: string, userId: string): Promise<void> => {
   await apiClient.delete(`/TaskAssignee/${taskId}/assign/${userId}`);
+};
+export const getTaskAttachments = async (taskId: string): Promise<TaskAttachmentDto[]> => {
+  const response = await apiClient.get<TaskAttachmentDto[]>(`/TaskAttachments/task/${taskId}`);
+  return response.data;
+};
+
+export const uploadTaskAttachment = async (taskId: string, file: File): Promise<TaskAttachmentDto> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await apiClient.post<TaskAttachmentDto>(`/TaskAttachments/${taskId}`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+export const deleteTaskAttachment = async (id: string): Promise<void> => {
+  await apiClient.delete(`/TaskAttachments/${id}`);
 };
