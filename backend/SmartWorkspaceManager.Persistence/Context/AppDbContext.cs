@@ -18,6 +18,8 @@ namespace SmartWorkspaceManager.Persistence.Context
         public DbSet<TaskAssignee> TaskAssignees => Set<TaskAssignee>();
         public DbSet<ChatChannel> ChatChannels => Set<ChatChannel>();
         public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+        public DbSet<TaskAttachment> Attachments => Set<TaskAttachment>();
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
