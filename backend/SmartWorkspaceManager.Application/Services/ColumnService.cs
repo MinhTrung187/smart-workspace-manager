@@ -172,8 +172,6 @@ namespace SmartWorkspaceManager.Application.Services
             if (workspace == null)
                 throw new KeyNotFoundException("Workspace not found.");
 
-            if (workspace.OwnerId != userId.Value)
-                throw new UnauthorizedAccessException("Only the workspace owner can update columns.");
 
             column.Name = request.Name.Trim();
             column.Position = request.Position;
@@ -206,8 +204,10 @@ namespace SmartWorkspaceManager.Application.Services
             if (workspace == null)
                 throw new KeyNotFoundException("Workspace not found.");
 
-            if (workspace.OwnerId != userId.Value)
-                throw new UnauthorizedAccessException("Only the workspace owner can delete columns.");
+            var isAllowed = workspace.OwnerId == userId.Value || board.CreatedBy == userId.Value;
+
+            if ( !isAllowed )
+                throw new UnauthorizedAccessException(" You don't have permission to delete this column .");
 
             column.SoftDelete();
             _columnRepository.Update(column);
@@ -235,8 +235,6 @@ namespace SmartWorkspaceManager.Application.Services
             if (workspace == null)
                 throw new KeyNotFoundException("Workspace not found.");
 
-            if (workspace.OwnerId != userId.Value)
-                throw new UnauthorizedAccessException("Only the workspace owner can reorder columns.");
 
             var allColumns = (await _columnRepository.FindAsync(c => c.BoardId == board.Id, Array.Empty<string>()))
                 .OrderBy(c => c.Position)

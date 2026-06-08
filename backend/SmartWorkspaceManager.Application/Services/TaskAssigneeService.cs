@@ -60,9 +60,6 @@ namespace SmartWorkspaceManager.Application.Services
             if (workspace == null)
                 throw new KeyNotFoundException("Workspace not found.");
 
-            var isAllowed = workspace.OwnerId == actorId.Value || task.CreatedBy == actorId.Value;
-            if (!isAllowed)
-                throw new UnauthorizedAccessException("You don't have permission to assign users to this task.");
 
             var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
@@ -121,10 +118,6 @@ namespace SmartWorkspaceManager.Application.Services
             var workspace = workspaces.FirstOrDefault();
             if (workspace == null)
                 throw new KeyNotFoundException("Workspace not found.");
-
-            var isAllowed = workspace.OwnerId == actorId.Value || task.CreatedBy == actorId.Value || assignment.UserId == actorId.Value;
-            if (!isAllowed)
-                throw new UnauthorizedAccessException("You don't have permission to remove this assignment.");
 
             _taskAssigneeRepository.Delete(assignment);
             await _taskAssigneeRepository.SaveChangesAsync();
