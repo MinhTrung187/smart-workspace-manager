@@ -1,9 +1,19 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
-import { X, Calendar, Flag, Loader2, Trash2, UserPlus, Check, ChevronDown } from 'lucide-react';
+import { X, Calendar, Flag, Loader2, Trash2, UserPlus, Check, ChevronDown, Paperclip, Download, File } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { TaskDto } from '../types';
-import { useCreateTask, useUpdateTask, useDeleteTask, useTaskAssigneesQuery, useAssignUserMutation, useUnassignUserMutation } from '../hooks/useTaskMutations';
+import { 
+  useCreateTask, 
+  useUpdateTask, 
+  useDeleteTask, 
+  useTaskAssigneesQuery, 
+  useAssignUserMutation, 
+  useUnassignUserMutation,
+  useTaskAttachmentsQuery,
+  useUploadAttachmentMutation,
+  useDeleteAttachmentMutation
+} from '../hooks/useTaskMutations';
 import { useBoardDetailQuery } from '../../board/hooks/useBoard';
 import { useWorkspaceMembersQuery } from '../../workspace/hooks/useWorkspace';
 import { assignUserToTask } from '../api/taskApi';
@@ -26,10 +36,10 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
   const [priority, setPriority] = useState<'Low' | 'Medium' | 'High'>('Medium');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSubmittingTask, setIsSubmittingTask] = useState(false);
-
+  
   // Create mode selected assignees state
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
-
+  
   const createTaskMutation = useCreateTask(boardId);
   const updateTaskMutation = useUpdateTask(boardId);
   const deleteTaskMutation = useDeleteTask(boardId);
@@ -49,6 +59,22 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
   const assignMutation = useAssignUserMutation(boardId, task?.id || '');
   const unassignMutation = useUnassignUserMutation(boardId, task?.id || '');
 
+  // Task attachments query and mutations
+  const { data: attachments, isLoading: attachmentsLoading } = useTaskAttachmentsQuery(
+    mode === 'edit' && task ? task.id : ''
+  );
+  const uploadAttachmentMutation = useUploadAttachmentMutation(boardId, task?.id || '');
+  const deleteAttachmentMutation = useDeleteAttachmentMutation(boardId, task?.id || '');
+
+  const formatBytes = (bytes: number, decimals = 2) => {
+    if (!bytes || bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  };
+
   const getMinDatetimeLocal = () => {
     const dateObj = new Date();
     const offset = dateObj.getTimezoneOffset() * 60000;
@@ -59,7 +85,7 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
     if (!isoString) return '';
     const dateObj = new Date(isoString);
     if (isNaN(dateObj.getTime())) return '';
-
+    
     const offset = dateObj.getTimezoneOffset() * 60000;
     return (new Date(dateObj.getTime() - offset)).toISOString().slice(0, 16);
   };
@@ -174,9 +200,9 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-visible my-8 animate-in zoom-in-95 duration-200 border border-slate-200">
-        <div className="flex justify-between items-center p-5 border-b border-slate-100 bg-slate-50/50 rounded-t-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200">
+        <div className="flex justify-between items-center p-5 border-b border-slate-100 bg-slate-50/50">
           <h2 className="text-lg font-bold text-slate-800">
             {mode === 'create' ? 'Create Task' : 'Edit Task'}
           </h2>
@@ -191,8 +217,9 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          <div>
+        <form onSubmit={handleSubmit} className="flex flex-col h-full max-h-[85vh] overflow-hidden bg-white">
+          <div className="flex-1 overflow-y-auto p-6 space-y-5">
+            <div>
             <label htmlFor="task-title" className="block text-sm font-semibold text-slate-700 mb-1.5">
               Title <span className="text-red-500">*</span>
             </label>
@@ -225,7 +252,7 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="task-priority" className="block text-sm font-semibold text-slate-700 mb-1.5 items-center gap-1.5">
+              <label htmlFor="task-priority" className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
                 <Flag className="w-4 h-4 text-slate-400" /> Priority
               </label>
               <select
@@ -240,9 +267,9 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
                 <option value="High">High</option>
               </select>
             </div>
-
+            
             <div>
-              <label htmlFor="task-duedate" className="block text-sm font-semibold text-slate-700 mb-1.5 items-center gap-1.5">
+              <label htmlFor="task-duedate" className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-slate-400" /> Due Date
               </label>
               <input
@@ -259,16 +286,16 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
 
           {/* Assignees Section */}
           <div className="border-t border-slate-100 pt-4">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
               <UserPlus className="w-3.5 h-3.5" /> Task Assignees
             </label>
-
+            
             <div className="flex flex-wrap items-center gap-3">
               {/* Stacked list of current assignees */}
               <div className="flex -space-x-2 overflow-hidden">
                 {mode === 'edit' ? (
                   assigneesLoading ? (
-                    <div key="loading" className="h-8 w-8 rounded-full bg-slate-50 border border-white flex items-center justify-center animate-pulse">
+                    <div className="h-8 w-8 rounded-full bg-slate-50 border border-white flex items-center justify-center animate-pulse">
                       <Loader2 className="w-3.5 h-3.5 text-indigo-500 animate-spin" />
                     </div>
                   ) : currentAssignees && currentAssignees.length > 0 ? (
@@ -344,7 +371,7 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
                 </button>
 
                 {isDropdownOpen && (
-                  <div className="absolute left-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-lg z-30 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+                  <div className="absolute left-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-lg z-25 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
                     <div className="p-2.5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                       <span className="text-xs font-bold text-slate-600 px-1">Workspace Members</span>
                       <button
@@ -355,22 +382,22 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
                         Done
                       </button>
                     </div>
-
-                    <div className="max-h-96 overflow-y-auto p-1 divide-y divide-slate-50">
+                    
+                    <div className="max-h-56 overflow-y-auto p-1 divide-y divide-slate-50">
                       {workspaceMembersLoading ? (
                         <div className="flex items-center justify-center p-4">
                           <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
                         </div>
                       ) : availableMembers && availableMembers.length > 0 ? (
-                        availableMembers.map((member, index) => {
+                        availableMembers.map((member) => {
                           const isAssigned = mode === 'edit'
-                            ? (currentAssignees?.some((a) => (a.userId || a.id) === member.userId) || false)
+                            ? (currentAssignees?.some((a) => a.id === member.userId || a.id === member.id) || false)
                             : selectedUserIds.includes(member.userId);
-
+                          
                           const initials = member.fullName
                             ? member.fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
                             : '?';
-
+                          
                           const isMutating = mode === 'edit' && (
                             (assignMutation.isPending && assignMutation.variables === member.userId) ||
                             (unassignMutation.isPending && unassignMutation.variables === member.userId)
@@ -379,7 +406,7 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
                           return (
                             <button
                               type="button"
-                              key={member.id || member.userId || index}
+                              key={member.userId}
                               onClick={() => {
                                 if (mode === 'edit') {
                                   handleToggleAssignee(member.userId, isAssigned);
@@ -414,7 +441,7 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
                                   )}
                                 </div>
                               </div>
-
+                              
                               {isMutating ? (
                                 <Loader2 className="w-3.5 h-3.5 text-indigo-500 animate-spin" />
                               ) : isAssigned ? (
@@ -433,7 +460,136 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
             </div>
           </div>
 
-          <div className="pt-4 flex flex-col sm:flex-row gap-3 items-center justify-between border-t border-slate-100">
+          {/* Attachments Section */}
+          {mode === 'edit' && task && (
+            <div className="border-t border-slate-100 pt-4">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2.5 flex items-center gap-1.5">
+                <Paperclip className="w-3.5 h-3.5" /> Task Attachments
+              </label>
+              
+              {/* Upload Dropzone */}
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) {
+                    uploadAttachmentMutation.mutate(file);
+                  }
+                }}
+                onClick={() => {
+                  document.getElementById('task-file-input')?.click();
+                }}
+                className="border border-dashed border-slate-300 hover:border-indigo-500 rounded-xl p-4 text-center cursor-pointer bg-slate-50 hover:bg-indigo-50/20 transition-all relative group"
+              >
+                <input
+                  id="task-file-input"
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      uploadAttachmentMutation.mutate(file);
+                    }
+                  }}
+                />
+                
+                <div className="flex flex-col items-center justify-center gap-1.5">
+                  <div className="h-8 w-8 rounded-full bg-white shadow-sm border border-slate-200 flex items-center justify-center text-slate-500 group-hover:text-indigo-600 group-hover:border-indigo-200 transition-all">
+                    <Paperclip className="w-4 h-4" />
+                  </div>
+                  <div className="text-xs font-semibold text-slate-700">
+                    Click or Drag & Drop to attach a file
+                  </div>
+                  <div className="text-[10px] text-slate-400">
+                    PDF, Image, Doc up to 10MB
+                  </div>
+                </div>
+
+                {uploadAttachmentMutation.isPending && (
+                  <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] rounded-xl flex items-center justify-center gap-2">
+                    <Loader2 className="w-5 h-5 text-indigo-600 animate-spin" />
+                    <span className="text-xs font-bold text-slate-700">Uploading file...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Attachments List */}
+              <div className="mt-3.5 space-y-2">
+                {attachmentsLoading ? (
+                  <div className="flex items-center gap-2 text-xs text-slate-400 font-semibold p-2">
+                    <Loader2 className="w-3.5 h-3.5 text-indigo-500 animate-spin" />
+                    Loading attachments...
+                  </div>
+                ) : attachments && attachments.length > 0 ? (
+                  attachments.map((attach) => {
+                    const isDeleting = deleteAttachmentMutation.isPending && deleteAttachmentMutation.variables === attach.id;
+                    
+                    return (
+                      <div
+                        key={attach.id}
+                        className={`flex items-center justify-between p-2.5 rounded-xl border border-slate-200/60 bg-white group hover:border-slate-300 transition-all ${
+                          isDeleting ? 'opacity-55' : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="p-2 bg-slate-50 text-slate-500 border border-slate-200/60 rounded-lg group-hover:bg-indigo-50/40 group-hover:text-indigo-600 group-hover:border-indigo-100 transition-colors">
+                            <File className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0 flex flex-col">
+                            <span className="text-xs font-bold text-slate-700 truncate max-w-[200px] md:max-w-[280px]">
+                              {attach.fileName}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium leading-none mt-1">
+                              {formatBytes(attach.fileSize)} • By {attach.uploadedByName} • {new Date(attach.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <a
+                            href={attach.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download={attach.fileName}
+                            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                            title="Download File"
+                          >
+                            <Download className="w-4 h-4" />
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => deleteAttachmentMutation.mutate(attach.id)}
+                            disabled={isDeleting}
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                            title="Delete File"
+                          >
+                            {isDeleting ? (
+                              <Loader2 className="w-4 h-4 text-red-600 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : !uploadAttachmentMutation.isPending && (
+                  <div className="text-center p-3 text-slate-400 text-[11px] font-medium border border-dotted border-slate-200 rounded-xl bg-slate-50/30">
+                    No files attached yet.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          </div>
+
+          <div className="p-5 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row gap-3 items-center justify-between shrink-0">
             {mode === 'edit' ? (
               <button
                 type="button"
@@ -445,7 +601,7 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
                 Delete Task
               </button>
             ) : <div />}
-
+            
             <div className="flex gap-3 w-full sm:w-auto">
               <button
                 type="button"
@@ -458,7 +614,7 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
               <button
                 type="submit"
                 disabled={isPending || !title.trim()}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center min-w-25 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:ring-offset-1 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center min-w-[100px] px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:ring-offset-1 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {isPending ? (
                   <>

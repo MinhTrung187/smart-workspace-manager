@@ -4,7 +4,17 @@ export interface TaskAssigneeDto {
   fullName: string;
   avatarUrl?: string;
 }
-
+export interface TaskAttachmentDto {
+  id: string;
+  taskId: string;
+  fileName: string;
+  fileUrl: string;
+  fileSize: number;
+  contentType: string;
+  uploadedById: string;
+  uploadedByName: string;
+  createdAt: string;
+}
 export interface TaskDto {
   id: string;
   columnId: string;
