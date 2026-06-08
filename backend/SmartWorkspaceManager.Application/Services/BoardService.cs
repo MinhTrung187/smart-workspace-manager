@@ -214,9 +214,6 @@ namespace SmartWorkspaceManager.Application.Services
             if (workspace == null)
                 throw new KeyNotFoundException("Workspace not found.");
 
-            var isAllowed = workspace.OwnerId == userId.Value || board.CreatedBy == userId.Value;
-            if (!isAllowed)
-                throw new UnauthorizedAccessException("You don't have permission to update this board.");
 
             board.Name = request.Name.Trim();
             board.Touch();

@@ -218,9 +218,7 @@ namespace SmartWorkspaceManager.Application.Services
             if (workspace == null)
                 throw new KeyNotFoundException("Workspace not found.");
 
-            var isAllowed = workspace.OwnerId == userId.Value || task.CreatedBy == userId.Value;
-            if (!isAllowed)
-                throw new UnauthorizedAccessException("You do not have permission to update this task.");
+
 
             if (request.ColumnId.HasValue && request.ColumnId.Value != task.ColumnId)
             {
@@ -320,9 +318,6 @@ namespace SmartWorkspaceManager.Application.Services
             if (workspace == null)
                 throw new KeyNotFoundException("Workspace not found.");
 
-            var isAllowed = workspace.OwnerId == userId.Value || task.CreatedBy == userId.Value;
-            if (!isAllowed)
-                throw new UnauthorizedAccessException("You do not have permission to move this task.");
 
             var targetColumn = await _columnRepository.GetByIdAsync(request.TargetColumnId);
             if (targetColumn == null)
