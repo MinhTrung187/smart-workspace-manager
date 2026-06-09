@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,6 +17,7 @@ namespace SmartWorkspaceManager.Application.Services
         private readonly IGenericRepository<Workspace> _workspaceRepository;
         private readonly IUserRepository _userRepository;
         private readonly IUserContext _userContext;
+        private readonly ICommentRealTimeService _commentRealTimeService;
 
         public TaskCommentService(
             IGenericRepository<TaskComment> commentRepository,
@@ -25,7 +26,8 @@ namespace SmartWorkspaceManager.Application.Services
             IGenericRepository<Board> boardRepository,
             IGenericRepository<Workspace> workspaceRepository,
             IUserRepository userRepository,
-            IUserContext userContext)
+            IUserContext userContext,
+            ICommentRealTimeService commentRealTimeService)
         {
             _commentRepository = commentRepository ?? throw new ArgumentNullException(nameof(commentRepository));
             _taskRepository = taskRepository ?? throw new ArgumentNullException(nameof(taskRepository));
@@ -34,6 +36,7 @@ namespace SmartWorkspaceManager.Application.Services
             _workspaceRepository = workspaceRepository ?? throw new ArgumentNullException(nameof(workspaceRepository));
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
+            _commentRealTimeService = commentRealTimeService ?? throw new ArgumentNullException(nameof(commentRealTimeService));
         }
 
         public async Task<TaskCommentDto> AddCommentAsync(Guid taskId, string content)
@@ -79,7 +82,7 @@ namespace SmartWorkspaceManager.Application.Services
             var user = await _userRepository.GetByIdAsync(actorId.Value);
             var userName = user?.FullName ?? string.Empty;
 
-            return new TaskCommentDto(
+            var result = new TaskCommentDto(
                 comment.Id,
                 comment.TaskId,
                 comment.UserId,
@@ -88,6 +91,10 @@ namespace SmartWorkspaceManager.Application.Services
                 comment.CreatedAt,
                 comment.UpdatedAt
             );
+
+            await _commentRealTimeService.NotifyCommentAddedAsync(taskId, result);
+
+            return result;
         }
 
         public async Task<IReadOnlyList<TaskCommentDto>> GetCommentsByTaskAsync(Guid taskId)
@@ -180,6 +187,8 @@ namespace SmartWorkspaceManager.Application.Services
             comment.SoftDelete();
             _commentRepository.Update(comment);
             await _commentRepository.SaveChangesAsync();
+
+            await _commentRealTimeService.NotifyCommentDeletedAsync(comment.TaskId, id);
         }
     }
 }
