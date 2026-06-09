@@ -1,5 +1,18 @@
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { createTask, updateTask, deleteTask, moveTask, getTaskAssignees, assignUserToTask, unassignUserFromTask, deleteTaskAttachment, uploadTaskAttachment, getTaskAttachments } from '../api/taskApi';
+import { createTask,
+    updateTask,
+    deleteTask,
+    moveTask,
+    getTaskAssignees, 
+    assignUserToTask, 
+    unassignUserFromTask, 
+    deleteTaskAttachment, 
+    uploadTaskAttachment, 
+    getTaskAttachments,
+    getTaskComments,
+    addTaskComment,
+    deleteTaskComment
+   } from '../api/taskApi';
 import type { CreateTaskRequest, UpdateTaskRequest } from '../types';
 
 export const useCreateTask = (boardId: string) => {
@@ -106,6 +119,35 @@ export const useDeleteAttachmentMutation = (boardId: string, taskId: string) => 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['taskAttachments', taskId] });
       queryClient.invalidateQueries({ queryKey: ['board', boardId] });
+    },
+  });
+};
+export const useTaskCommentsQuery = (taskId: string) => {
+  return useQuery({
+    queryKey: ['taskComments', taskId],
+    queryFn: () => getTaskComments(taskId),
+    enabled: !!taskId,
+  });
+};
+
+export const useAddTaskCommentMutation = (taskId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (content: string) => addTaskComment(taskId, content),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['taskComments', taskId] });
+    },
+  });
+};
+
+export const useDeleteTaskCommentMutation = (taskId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => deleteTaskComment(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['taskComments', taskId] });
     },
   });
 };
