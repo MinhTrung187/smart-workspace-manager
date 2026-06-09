@@ -20,7 +20,7 @@ A modern, minimalist task management and team collaboration platform. It feature
 This project is structured as a **Monorepo** containing both the Frontend and Backend services.
 
 ### Backend (`/backend`)
-* **Framework:** ASP.NET Core 8.0/9.0 Web API
+* **Framework:** ASP.NET Core 8.0 Web API
 * **Architecture:** Clean Architecture (Domain, Application, Infrastructure, API)
 * **Real-time:** ASP.NET Core SignalR (WebSockets)
 * **Database & ORM:** PostgreSQL (Hosted on Supabase) with Entity Framework Core
