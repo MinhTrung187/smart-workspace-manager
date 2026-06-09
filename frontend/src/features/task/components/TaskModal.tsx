@@ -20,6 +20,7 @@ import {
 import { useBoardDetailQuery } from '../../board/hooks/useBoard';
 import { useWorkspaceMembersQuery } from '../../workspace/hooks/useWorkspace';
 import { assignUserToTask } from '../api/taskApi';
+import { useCommentSignalR } from '../hooks/useCommentSignalR';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -93,6 +94,9 @@ export default function TaskModal({ isOpen, onClose, boardId, mode, columnId, ta
   );
   const addCommentMutation = useAddTaskCommentMutation(task?.id || '');
   const deleteCommentMutation = useDeleteTaskCommentMutation(task?.id || '');
+
+  // Establish real-time SignalR connection for comments
+  useCommentSignalR(mode === 'edit' && task ? task.id : '');
 
   // Comment input state
   const [commentText, setCommentText] = useState('');
