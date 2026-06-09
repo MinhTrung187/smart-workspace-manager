@@ -20,6 +20,7 @@ namespace SmartWorkspaceManager.Persistence.Context
         public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
         public DbSet<TaskAttachment> Attachments => Set<TaskAttachment>();
         public DbSet<TaskComment> TaskComments => Set<TaskComment>();
+        public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
