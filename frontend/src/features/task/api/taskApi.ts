@@ -1,5 +1,5 @@
 import { axiosInstance as apiClient } from '../../../api/axiosInstance';
-import type { TaskDto, CreateTaskRequest, UpdateTaskRequest, TaskAssigneeDto, TaskAttachmentDto } from '../types';
+import type { TaskDto, CreateTaskRequest, UpdateTaskRequest, TaskAssigneeDto, TaskAttachmentDto, TaskCommentDto } from '../types';
 
 
 export const createTask = async (data: CreateTaskRequest): Promise<TaskDto> => {
@@ -54,4 +54,17 @@ export const uploadTaskAttachment = async (taskId: string, file: File): Promise<
 
 export const deleteTaskAttachment = async (id: string): Promise<void> => {
   await apiClient.delete(`/TaskAttachments/${id}`);
+};
+export const getTaskComments = async (taskId: string): Promise<TaskCommentDto[]> => {
+  const response = await apiClient.get<TaskCommentDto[]>(`/TaskComments/task/${taskId}`);
+  return response.data;
+};
+
+export const addTaskComment = async (taskId: string, content: string): Promise<TaskCommentDto> => {
+  const response = await apiClient.post<TaskCommentDto>(`/TaskComments/${taskId}`, { content });
+  return response.data;
+};
+
+export const deleteTaskComment = async (id: string): Promise<void> => {
+  await apiClient.delete(`/TaskComments/${id}`);
 };

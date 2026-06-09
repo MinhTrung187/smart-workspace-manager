@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SmartWorkspaceManager.API.Hubs;
@@ -117,8 +117,10 @@ builder.Services.AddScoped<ITaskAssigneeService, TaskAssigneeService>();
 builder.Services.AddScoped<IWorkspaceMemberService, WorkspaceMemberService>();
 builder.Services.AddScoped<IBoardRealTimeService, BoardRealTimeService>();
 builder.Services.AddScoped<IChatRealTimeService, ChatRealTimeService>();
+builder.Services.AddScoped<ICommentRealTimeService, CommentRealTimeService>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<ITaskAttachmentService, TaskAttachmentService>();
+builder.Services.AddScoped<ITaskCommentService, TaskCommentService>();
 builder.Services.AddHttpClient<IFileStorageService,SupabaseFileStorageService>();
 
 builder.Services.AddCors(options =>
@@ -156,5 +158,6 @@ app.MapControllers();
 
 app.MapHub<BoardHub>("/hubs/board");
 app.MapHub<ChatHub>("/hubs/chat");
+app.MapHub<CommentHub>("/hubs/comment");
 
 app.Run();

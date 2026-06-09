@@ -26,6 +26,7 @@ namespace SmartWorkspaceManager.Domain.Entities
 
         public ICollection<TaskAssignee> Assignees { get; set; } = new List<TaskAssignee>();
         public ICollection<TaskAttachment> Attachments { get; set; } = new List<TaskAttachment>();
+        public ICollection<TaskComment> Comments { get; set; } = new List<TaskComment>();
         public BoardTask()
         {
             CreatedAt = DateTime.UtcNow;

@@ -41,3 +41,13 @@ export interface UpdateTaskRequest {
   position: number;
   columnId: string;
 }
+export interface TaskCommentDto {
+  id: string;
+  taskId: string;
+  userId: string;
+  userName: string;
+  avatarUrl: string | null;
+  content: string;
+  createdAt: string;
+  updatedAt: string | null;
+}
