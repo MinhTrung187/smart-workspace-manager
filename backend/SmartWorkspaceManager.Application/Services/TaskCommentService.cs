@@ -81,12 +81,14 @@ namespace SmartWorkspaceManager.Application.Services
 
             var user = await _userRepository.GetByIdAsync(actorId.Value);
             var userName = user?.FullName ?? string.Empty;
+            var avatarUrl = user?.AvatarUrl;
 
             var result = new TaskCommentDto(
                 comment.Id,
                 comment.TaskId,
                 comment.UserId,
                 userName,
+                avatarUrl,
                 comment.Content,
                 comment.CreatedAt,
                 comment.UpdatedAt
@@ -142,6 +144,7 @@ namespace SmartWorkspaceManager.Application.Services
                 c.TaskId,
                 c.UserId,
                 userDict.TryGetValue(c.UserId, out var uu) ? uu.FullName : string.Empty,
+                userDict.TryGetValue(c.UserId, out var uu2) ? uu2.AvatarUrl : null,
                 c.Content,
                 c.CreatedAt,
                 c.UpdatedAt

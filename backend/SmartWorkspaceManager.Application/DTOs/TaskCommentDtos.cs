@@ -11,6 +11,7 @@ namespace SmartWorkspaceManager.Application.DTOs
         Guid TaskId,
         Guid UserId,
         string UserName,
+        string? AvatarUrl,
         string Content,
         DateTime CreatedAt,
         DateTime? UpdatedAt
