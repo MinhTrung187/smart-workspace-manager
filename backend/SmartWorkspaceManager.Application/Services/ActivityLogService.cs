@@ -28,7 +28,6 @@ namespace SmartWorkspaceManager.Application.Services
 
         public async Task LogAsync(ActivityType type, Guid workspaceId, Guid? taskId = null, string? description = null)
         {
-            // Use current user if available; caller can also set description to include actor info if desired.
             var userId = _userContext.UserId ?? Guid.Empty;
 
             var log = new ActivityLog
@@ -59,9 +58,8 @@ namespace SmartWorkspaceManager.Application.Services
                 .Take(pageSize)
                 .ToList();
 
-            // preload users
             var userIds = items.Select(i => i.UserId).Distinct().ToList();
-            var users = new Dictionary<Guid, Domain.Entities.User>();
+            var users = new Dictionary<Guid,User>();
             foreach (var uid in userIds)
             {
                 var u = await _userRepository.GetByIdAsync(uid);
@@ -73,6 +71,7 @@ namespace SmartWorkspaceManager.Application.Services
                 i.WorkspaceId,
                 i.UserId,
                 users.TryGetValue(i.UserId, out var uu) ? uu.FullName : string.Empty,
+                users.TryGetValue(i.UserId, out var uu2) ? uu2.AvatarUrl : null,
                 i.ActivityType,
                 i.TaskId,
                 i.Description,

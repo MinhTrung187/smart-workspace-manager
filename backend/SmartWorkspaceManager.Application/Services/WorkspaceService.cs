@@ -21,6 +21,7 @@ namespace SmartWorkspaceManager.Application.Services
         private readonly IGenericRepository<ChatChannel> _chatChannelRepository;
         private readonly IUserRepository _userRepository;
         private readonly IUserContext _userContext;
+        private readonly IActivityLogService _activityLogService;
 
         public WorkspaceService(
             IGenericRepository<Workspace> workspaceRepository,
@@ -31,7 +32,8 @@ namespace SmartWorkspaceManager.Application.Services
             IGenericRepository<BoardTask> taskRepository,
             IGenericRepository<ChatChannel> chatChannelRepository,
             IUserRepository userRepository,
-            IUserContext userContext)
+            IUserContext userContext,
+            IActivityLogService activityLogService)
         {
             _workspaceRepository = workspaceRepository ?? throw new ArgumentNullException(nameof(workspaceRepository));
             _workspaceMemberRepository = workspaceMemberRepository ?? throw new ArgumentNullException(nameof(workspaceMemberRepository));
@@ -42,6 +44,7 @@ namespace SmartWorkspaceManager.Application.Services
             _taskRepository = taskRepository ?? throw new ArgumentNullException(nameof(taskRepository));
             _chatChannelRepository = chatChannelRepository ?? throw new ArgumentNullException(nameof(chatChannelRepository));
             _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
+            _activityLogService = activityLogService;
         }
 
         public async Task<WorkspaceResponse> CreateWorkspaceAsync(CreateWorkspaceRequest request)
@@ -102,6 +105,11 @@ namespace SmartWorkspaceManager.Application.Services
             };
 
             await _chatChannelRepository.AddAsync(channel);
+            await _activityLogService.LogAsync(
+                ActivityType.WorkspaceCreated,
+                workspace.Id,
+                description: $"Workspace '{workspace.Name}' created."
+            ); 
             await _chatChannelRepository.SaveChangesAsync();
 
             return new WorkspaceResponse(

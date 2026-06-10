@@ -9,6 +9,7 @@ namespace SmartWorkspaceManager.Application.DTOs
         Guid WorkspaceId,
         Guid UserId,
         string UserName,
+        string? AvatarUrl,
         ActivityType ActivityType,
         Guid? TaskId,
         string Description,
