@@ -16,12 +16,14 @@ namespace SmartWorkspaceManager.Application.Services
         private readonly IUserRepository _userRepository;
         private readonly IUserContext _userContext;
         private readonly IGenericRepository<Workspace> _workspaceRepository;
+        private readonly IActivityLogService _activityLogservice;   
 
         public WorkspaceInvitationService(
             IGenericRepository<WorkspaceInvitation> invitationRepository,
             IUserRepository userRepository,
             IGenericRepository<WorkspaceMember> workspaceMemberRepository,
             IGenericRepository<Workspace> workspaceRepository,
+            IActivityLogService activityLogService,
             IUserContext userContext)
         {
             _invitationRepository = invitationRepository ?? throw new ArgumentNullException(nameof(invitationRepository));
@@ -29,6 +31,7 @@ namespace SmartWorkspaceManager.Application.Services
             _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
             _workspaceMemberRepository = workspaceMemberRepository ?? throw new ArgumentNullException(nameof(workspaceMemberRepository));
             _workspaceRepository = workspaceRepository ?? throw new ArgumentNullException(nameof(workspaceRepository));
+            _activityLogservice = activityLogService ?? throw new ArgumentNullException(nameof(activityLogService));
         }
 
         public async Task<List<AllInvitationResponse>> GetInvitationsForCurrentUserAsync()
@@ -206,10 +209,14 @@ namespace SmartWorkspaceManager.Application.Services
                 WorkspaceId = workspaceId,
                 Email = request.Email.Trim(),
                 Status = InvitationStatus.Pending,
-                ExpiredAt = DateTime.UtcNow.AddDays(7) // Invitation expires in 7 days
+                ExpiredAt = DateTime.UtcNow.AddDays(7) 
             };
 
             await _invitationRepository.AddAsync(invitation);
+            await _activityLogservice.LogAsync(
+                ActivityType.MemberInvited, 
+                workspaceId,
+                description: $"Invited '{request.Email}' to the workspace.");
             await _invitationRepository.SaveChangesAsync();
 
             return new WorkspaceInvitationResponse(
