@@ -135,7 +135,11 @@ namespace SmartWorkspaceManager.Application.Services
             invitation.Status = InvitationStatus.Accepted;
             _invitationRepository.Update(invitation);
 
-            // SaveChanges on either repository will persist both changes (shared DbContext)
+            await _activityLogservice.LogAsync(
+                ActivityType.MemberJoined,
+                invitation.WorkspaceId,
+                description: "Joined the workspace."
+);
             await _invitationRepository.SaveChangesAsync();
 
             return new WorkspaceMemberDto(
@@ -213,10 +217,12 @@ namespace SmartWorkspaceManager.Application.Services
             };
 
             await _invitationRepository.AddAsync(invitation);
+            var target = invitedUser?.FullName ?? inviteEmail;
+
             await _activityLogservice.LogAsync(
-                ActivityType.MemberInvited, 
+                ActivityType.MemberInvited,
                 workspaceId,
-                description: $"Invited '{request.Email}' to the workspace.");
+                description: $"Invited {target}");
             await _invitationRepository.SaveChangesAsync();
 
             return new WorkspaceInvitationResponse(

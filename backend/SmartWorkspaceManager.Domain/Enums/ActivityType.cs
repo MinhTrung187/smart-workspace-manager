@@ -25,7 +25,6 @@ namespace SmartWorkspaceManager.Domain.Enums
         TaskCreated = 10,
         TaskUpdated = 11,
         TaskDeleted = 12,
-
         TaskMoved = 13,
 
         TaskAssigned = 14,
