@@ -1,10 +1,11 @@
+using SmartWorkspaceManager.Application.DTOs;
+using SmartWorkspaceManager.Application.Interfaces;
+using SmartWorkspaceManager.Domain.Entities;
+using SmartWorkspaceManager.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using SmartWorkspaceManager.Application.DTOs;
-using SmartWorkspaceManager.Application.Interfaces;
-using SmartWorkspaceManager.Domain.Entities;
 
 namespace SmartWorkspaceManager.Application.Services
 {
@@ -15,12 +16,14 @@ namespace SmartWorkspaceManager.Application.Services
         private readonly IGenericRepository<Workspace> _workspaceRepository;
         private readonly IUserContext _userContext;
         private readonly IBoardRealTimeService _realTimeService;
+        private readonly IActivityLogService _activityLogService;
 
         public ColumnService(
             IGenericRepository<Column> columnRepository,
             IGenericRepository<Board> boardRepository,
             IGenericRepository<Workspace> workspaceRepository,
             IUserContext userContext,
+            IActivityLogService activityLogService,
             IBoardRealTimeService realTimeService)
         {
             _columnRepository = columnRepository ?? throw new ArgumentNullException(nameof(columnRepository));
@@ -28,6 +31,7 @@ namespace SmartWorkspaceManager.Application.Services
             _workspaceRepository = workspaceRepository ?? throw new ArgumentNullException(nameof(workspaceRepository));
             _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
             _realTimeService = realTimeService ?? throw new ArgumentNullException(nameof(realTimeService));
+            _activityLogService = activityLogService ?? throw new ArgumentNullException(nameof(activityLogService));
         }
 
         public async Task<ColumnResponse> CreateColumnAsync(CreateColumnRequest request)
@@ -75,6 +79,10 @@ namespace SmartWorkspaceManager.Application.Services
             };
 
             await _columnRepository.AddAsync(column);
+            await _activityLogService.LogAsync(
+              ActivityType.ColumnCreated,
+              workspace.Id,
+              description: $"Created column {column.Name}");
             await _columnRepository.SaveChangesAsync();
 
             await _realTimeService.NotifyColumnCreatedAsync(column.BoardId, column.Id);
@@ -177,6 +185,10 @@ namespace SmartWorkspaceManager.Application.Services
             column.Position = request.Position;
             column.Touch();
             _columnRepository.Update(column);
+            await _activityLogService.LogAsync(
+              ActivityType.ColumnUpdated,
+              workspace.Id,
+              description: $"Updated column {column.Name}");
             await _columnRepository.SaveChangesAsync();
 
             await _realTimeService.NotifyColumnUpdatedAsync(column.BoardId, column.Id);
@@ -211,6 +223,10 @@ namespace SmartWorkspaceManager.Application.Services
 
             column.SoftDelete();
             _columnRepository.Update(column);
+            await _activityLogService.LogAsync(
+              ActivityType.ColumnDeleted,
+              workspace.Id,
+              description: $"Deleted column {column.Name}");
             await _columnRepository.SaveChangesAsync();
 
             await _realTimeService.NotifyColumnDeletedAsync(column.BoardId, column.Id);
