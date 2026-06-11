@@ -16,6 +16,7 @@ namespace SmartWorkspaceManager.Application.Services
         private readonly IGenericRepository<Column> _columnRepository;
         private readonly IGenericRepository<BoardTask> _taskRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IActivityLogService _activityLogService;
         private readonly IUserContext _userContext;
 
         public BoardService(
@@ -24,6 +25,7 @@ namespace SmartWorkspaceManager.Application.Services
             IGenericRepository<Column> columnRepository,
             IGenericRepository<BoardTask> taskRepository,
             IUserRepository userRepository,
+            IActivityLogService activityLogService,
             IUserContext userContext)
         {
             _boardRepository = boardRepository ?? throw new ArgumentNullException(nameof(boardRepository));
@@ -31,6 +33,7 @@ namespace SmartWorkspaceManager.Application.Services
             _columnRepository = columnRepository ?? throw new ArgumentNullException(nameof(columnRepository));
             _taskRepository = taskRepository ?? throw new ArgumentNullException(nameof(taskRepository));
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            _activityLogService = activityLogService ?? throw new ArgumentNullException(nameof(activityLogService));
             _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
         }
 
@@ -68,6 +71,10 @@ namespace SmartWorkspaceManager.Application.Services
             };
 
             await _boardRepository.AddAsync(board);
+            await _activityLogService.LogAsync(
+            ActivityType.BoardCreated,
+            request.WorkspaceId,
+            description: $"Created board '{board.Name}'.");
             await _boardRepository.SaveChangesAsync();
 
             return new BoardResponse(
