@@ -225,6 +225,10 @@ namespace SmartWorkspaceManager.Application.Services
             board.Name = request.Name.Trim();
             board.Touch();
             _boardRepository.Update(board);
+            await _activityLogService.LogAsync(
+                ActivityType.BoardUpdated,
+                board.WorkspaceId,
+                description: $"Updated board '{board.Name}'.");
             await _boardRepository.SaveChangesAsync();
 
             return new BoardResponse(
