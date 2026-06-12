@@ -308,7 +308,7 @@ namespace SmartWorkspaceManager.Application.Services
             await _taskRepository.SaveChangesAsync();
 
             await _realTimeService.NotifyTaskDeletedAsync(column.BoardId, task.Id);
-        }
+        }   
         public async Task<BoardTaskResponse> MoveTaskAsync(Guid id, MoveTaskRequest request)
         {
             var userId = _userContext.UserId;
@@ -423,7 +423,8 @@ namespace SmartWorkspaceManager.Application.Services
             var targetIndex2 = request.NewIndex;
             if (targetIndex2 < 1) targetIndex2 = 1;
             if (targetIndex2 > m + 1) targetIndex2 = m + 1;
-
+            var sourceColumnName = sourceColumn.Name;
+            var targetColumnName = targetColumn.Name;
 
             task.ColumnId = targetColumn.Id;
             targetTasks.Insert(targetIndex2 - 1, task);
@@ -452,7 +453,12 @@ namespace SmartWorkspaceManager.Application.Services
                 }
                 posT+=1000;
             }
-
+            await _activityLogService.LogAsync(
+                ActivityType.TaskMoved,
+                workspace.Id,
+                task.Id,
+                description: $"Moved task '{task.Title}' from '{sourceColumnName}' to '{targetColumnName}'."
+            );
             await _taskRepository.SaveChangesAsync();
 
             await _realTimeService.NotifyTaskMovedAsync(sourceColumn.BoardId, task.Id);
