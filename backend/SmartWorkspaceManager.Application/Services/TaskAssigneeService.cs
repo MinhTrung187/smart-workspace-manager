@@ -18,6 +18,7 @@ namespace SmartWorkspaceManager.Application.Services
         private readonly IGenericRepository<Workspace> _workspaceRepository;
         private readonly IUserRepository _userRepository;
         private readonly IUserContext _userContext;
+        private readonly IActivityLogService _activityLogService;
 
         public TaskAssigneeService(
             IGenericRepository<TaskAssignee> taskAssigneeRepository,
@@ -26,6 +27,7 @@ namespace SmartWorkspaceManager.Application.Services
             IGenericRepository<Board> boardRepository,
             IGenericRepository<Workspace> workspaceRepository,
             IUserRepository userRepository,
+            IActivityLogService activityLogService,
             IUserContext userContext)
         {
             _taskAssigneeRepository = taskAssigneeRepository ?? throw new ArgumentNullException(nameof(taskAssigneeRepository));
@@ -35,6 +37,7 @@ namespace SmartWorkspaceManager.Application.Services
             _workspaceRepository = workspaceRepository ?? throw new ArgumentNullException(nameof(workspaceRepository));
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
+            _activityLogService = activityLogService ?? throw new ArgumentNullException(nameof(activityLogService));
         }
 
         public async Task<TaskAssigneeResponse> AssignAsync(Guid taskId, Guid userId)
@@ -80,6 +83,12 @@ namespace SmartWorkspaceManager.Application.Services
             };
 
             await _taskAssigneeRepository.AddAsync(assignee);
+            await _activityLogService.LogAsync(
+                ActivityType.TaskAssigned,
+                workspace.Id,
+                taskId,
+                description: $"Assigned {user.FullName} to task '{task.Title}'."
+                );
             await _taskAssigneeRepository.SaveChangesAsync();
 
             return new TaskAssigneeResponse(
@@ -118,8 +127,17 @@ namespace SmartWorkspaceManager.Application.Services
             var workspace = workspaces.FirstOrDefault();
             if (workspace == null)
                 throw new KeyNotFoundException("Workspace not found.");
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+                throw new KeyNotFoundException("User not found.");
 
             _taskAssigneeRepository.Delete(assignment);
+                await _activityLogService.LogAsync(
+                    ActivityType.TaskUnassigned,
+                    workspace.Id,
+                    taskId,
+                    description: $"Unassigned {user.FullName} from task '{task.Title}'."
+                    );
             await _taskAssigneeRepository.SaveChangesAsync();
         }
 
