@@ -284,7 +284,10 @@ namespace SmartWorkspaceManager.Application.Services
                 }
                 position += 1000; 
             }
-
+            //await _activityLogService.LogAsync(
+            //    ActivityType.ColumnMoved,
+            //    workspace.Id,
+            //    description: $"Reordered column '{column.Name}'.");
             await _columnRepository.SaveChangesAsync();
 
             await _realTimeService.NotifyColumnMovedAsync(column.BoardId, column.Id);

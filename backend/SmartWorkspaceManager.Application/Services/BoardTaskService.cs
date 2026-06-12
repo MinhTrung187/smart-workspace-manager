@@ -18,6 +18,7 @@ namespace SmartWorkspaceManager.Application.Services
         private readonly IUserRepository _userRepository;
         private readonly IUserContext _userContext;
         private readonly IBoardRealTimeService _realTimeService;
+        private readonly IActivityLogService _activityLogService;
 
         public BoardTaskService(
             IGenericRepository<BoardTask> taskRepository,
@@ -26,6 +27,7 @@ namespace SmartWorkspaceManager.Application.Services
             IGenericRepository<Workspace> workspaceRepository,
             IUserRepository userRepository,
             IUserContext userContext,
+            IActivityLogService activityLogService,
             IBoardRealTimeService realTimeService)
         {
             _taskRepository = taskRepository ?? throw new ArgumentNullException(nameof(taskRepository));
@@ -35,6 +37,7 @@ namespace SmartWorkspaceManager.Application.Services
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
             _realTimeService = realTimeService ?? throw new ArgumentNullException(nameof(realTimeService));
+            _activityLogService = activityLogService ?? throw new ArgumentNullException(nameof(activityLogService));
         }
 
         public async Task<BoardTaskResponse> CreateTaskAsync(CreateBoardTaskRequest request)
@@ -87,6 +90,10 @@ namespace SmartWorkspaceManager.Application.Services
             };
 
             await _taskRepository.AddAsync(task);
+            await _activityLogService.LogAsync
+                (ActivityType.TaskCreated,
+                workspace.Id,
+                description: $"Created task '{task.Title}'.");
             await _taskRepository.SaveChangesAsync();
 
             await _realTimeService.NotifyTaskCreatedAsync(column.BoardId, task.Id);
@@ -242,6 +249,10 @@ namespace SmartWorkspaceManager.Application.Services
 
             task.Touch();
             _taskRepository.Update(task);
+            await _activityLogService.LogAsync(
+                ActivityType.TaskUpdated,
+                workspace.Id,
+                description: $"Updated task '{task.Title}'.");
             await _taskRepository.SaveChangesAsync();
 
             await _realTimeService.NotifyTaskUpdatedAsync(column.BoardId, task.Id);
@@ -290,6 +301,10 @@ namespace SmartWorkspaceManager.Application.Services
 
             task.SoftDelete();
             _taskRepository.Update(task);
+            await _activityLogService.LogAsync(
+                ActivityType.TaskDeleted,
+                workspace.Id,
+                description: $"Deleted task '{task.Title}'.");
             await _taskRepository.SaveChangesAsync();
 
             await _realTimeService.NotifyTaskDeletedAsync(column.BoardId, task.Id);
