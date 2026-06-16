@@ -121,7 +121,9 @@ builder.Services.AddScoped<ICommentRealTimeService, CommentRealTimeService>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<ITaskAttachmentService, TaskAttachmentService>();
 builder.Services.AddScoped<ITaskCommentService, TaskCommentService>();
+builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
 builder.Services.AddHttpClient<IFileStorageService,SupabaseFileStorageService>();
+
 
 builder.Services.AddCors(options =>
 {
