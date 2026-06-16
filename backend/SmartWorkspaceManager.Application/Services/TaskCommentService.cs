@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using SmartWorkspaceManager.Application.DTOs;
 using SmartWorkspaceManager.Application.Interfaces;
 using SmartWorkspaceManager.Domain.Entities;
+using SmartWorkspaceManager.Domain.Enums;
 
 namespace SmartWorkspaceManager.Application.Services
 {
@@ -18,6 +19,7 @@ namespace SmartWorkspaceManager.Application.Services
         private readonly IUserRepository _userRepository;
         private readonly IUserContext _userContext;
         private readonly ICommentRealTimeService _commentRealTimeService;
+        private readonly IActivityLogService _activityLogService;
 
         public TaskCommentService(
             IGenericRepository<TaskComment> commentRepository,
@@ -27,6 +29,7 @@ namespace SmartWorkspaceManager.Application.Services
             IGenericRepository<Workspace> workspaceRepository,
             IUserRepository userRepository,
             IUserContext userContext,
+            IActivityLogService activityLogService,
             ICommentRealTimeService commentRealTimeService)
         {
             _commentRepository = commentRepository ?? throw new ArgumentNullException(nameof(commentRepository));
@@ -37,6 +40,7 @@ namespace SmartWorkspaceManager.Application.Services
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
             _commentRealTimeService = commentRealTimeService ?? throw new ArgumentNullException(nameof(commentRealTimeService));
+            _activityLogService = activityLogService ?? throw new ArgumentNullException(nameof(activityLogService));
         }
 
         public async Task<TaskCommentDto> AddCommentAsync(Guid taskId, string content)
@@ -75,8 +79,13 @@ namespace SmartWorkspaceManager.Application.Services
                 UserId = actorId.Value,
                 Content = content.Trim()
             };
-
             await _commentRepository.AddAsync(comment);
+            await _activityLogService.LogAsync(
+                ActivityType.TaskCommented,
+                workspace.Id,
+                taskId,
+                description: $"Commented on task {task.Title}"
+                );
             await _commentRepository.SaveChangesAsync();
 
             var user = await _userRepository.GetByIdAsync(actorId.Value);

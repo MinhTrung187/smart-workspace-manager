@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using SmartWorkspaceManager.Application.DTOs;
 using SmartWorkspaceManager.Application.Interfaces;
 using SmartWorkspaceManager.Domain.Entities;
+using SmartWorkspaceManager.Domain.Enums;
 
 namespace SmartWorkspaceManager.Application.Services
 {
@@ -12,15 +13,19 @@ namespace SmartWorkspaceManager.Application.Services
     {
         private readonly IGenericRepository<TaskAttachment> _attachmentRepository;
         private readonly IGenericRepository<BoardTask> _taskRepository;
+        private readonly IGenericRepository<Workspace> _workspaceRepository;
         private readonly IUserRepository _userRepository;
         private readonly IUserContext _userContext;
         private readonly IFileStorageService _fileStorageService;
+        private readonly IActivityLogService _activityLogService;
 
         public TaskAttachmentService(
             IGenericRepository<TaskAttachment> attachmentRepository,
             IGenericRepository<BoardTask> taskRepository,
+            IGenericRepository<Workspace> workspaceRepository,
             IUserRepository userRepository,
             IUserContext userContext,
+            IActivityLogService activityLogService,
             IFileStorageService fileStorageService)
         {
             _attachmentRepository = attachmentRepository ?? throw new ArgumentNullException(nameof(attachmentRepository));
@@ -28,6 +33,8 @@ namespace SmartWorkspaceManager.Application.Services
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
             _fileStorageService = fileStorageService ?? throw new ArgumentNullException(nameof(fileStorageService));
+            _activityLogService = activityLogService ?? throw new ArgumentNullException(nameof(activityLogService));
+            _workspaceRepository = workspaceRepository ?? throw new ArgumentNullException(nameof(workspaceRepository));
         }
 
         public async Task<TaskAttachmentDto> AddAttachmentAsync(Guid taskId, System.IO.Stream fileStream, string fileName, string contentType)
@@ -36,8 +43,16 @@ namespace SmartWorkspaceManager.Application.Services
             if (userId == null || userId == Guid.Empty)
                 throw new UnauthorizedAccessException("User is not authenticated.");
 
-            var tasks = await _taskRepository.FindAsync(t => t.Id == taskId, "Creator");
+            var tasks = await _taskRepository.FindAsync(
+                t => t.Id == taskId,
+                "Column.Board.Workspace",
+                "Creator"
+            );
+
             var task = tasks.FirstOrDefault();
+
+            var workspaceId = task?.Column?.Board?.WorkspaceId
+                ?? throw new KeyNotFoundException("Workspace not found.");
             if (task == null)
                 throw new KeyNotFoundException("Task not found.");
 
@@ -58,6 +73,12 @@ namespace SmartWorkspaceManager.Application.Services
             };
 
             await _attachmentRepository.AddAsync(attachment);
+            await _activityLogService.LogAsync(
+                   ActivityType.TaskAttachmentUploaded,
+                   workspaceId,
+                   taskId,
+                   description: $"Uploaded file '{attachment.FileName}'."
+               );
             await _attachmentRepository.SaveChangesAsync();
 
             var uploader = await _userRepository.GetByIdAsync(userId.Value);
